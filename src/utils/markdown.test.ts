@@ -1,0 +1,89 @@
+import { describe, expect, test } from "bun:test";
+import { extractHeadings, extractTasks, extractTags, extractLinks } from "./markdown.js";
+
+describe("extractHeadings", () => {
+  test("extracts headings with levels", () => {
+    const content = "# Title\n\nSome text\n\n## Section\n\n### Sub";
+    const headings = extractHeadings(content);
+    expect(headings).toEqual([
+      { level: 1, text: "Title", line: 1 },
+      { level: 2, text: "Section", line: 5 },
+      { level: 3, text: "Sub", line: 7 },
+    ]);
+  });
+
+  test("returns empty for no headings", () => {
+    expect(extractHeadings("Just text")).toEqual([]);
+  });
+});
+
+describe("extractTasks", () => {
+  test("extracts tasks with status", () => {
+    const content = "# Tasks\n- [ ] Buy groceries\n- [x] Ship feature\n- [-] Cancelled";
+    const tasks = extractTasks(content);
+    expect(tasks).toEqual([
+      { line: 2, status: " ", text: "Buy groceries", done: false },
+      { line: 3, status: "x", text: "Ship feature", done: true },
+      { line: 4, status: "-", text: "Cancelled", done: false },
+    ]);
+  });
+
+  test("handles indented tasks", () => {
+    const content = "  - [ ] Indented task";
+    const tasks = extractTasks(content);
+    expect(tasks.length).toBe(1);
+    expect(tasks[0].text).toBe("Indented task");
+  });
+
+  test("returns empty for no tasks", () => {
+    expect(extractTasks("No tasks here")).toEqual([]);
+  });
+});
+
+describe("extractTags", () => {
+  test("extracts inline tags", () => {
+    const content = "Some text #project and #urgent/high stuff";
+    const tags = extractTags(content);
+    expect(tags).toContain("project");
+    expect(tags).toContain("urgent/high");
+  });
+
+  test("deduplicates tags", () => {
+    const content = "#tag1 text #tag1 more #tag2";
+    const tags = extractTags(content);
+    expect(tags).toEqual(["tag1", "tag2"]);
+  });
+
+  test("returns empty for no tags", () => {
+    expect(extractTags("No tags")).toEqual([]);
+  });
+});
+
+describe("extractLinks", () => {
+  test("extracts wikilinks", () => {
+    const content = "See [[Project A]] and [[Project B|alias]]";
+    const links = extractLinks(content);
+    expect(links.wikilinks).toEqual(["Project A", "Project B"]);
+    expect(links.outgoing).toContain("Project A");
+    expect(links.outgoing).toContain("Project B");
+  });
+
+  test("strips heading refs from wikilinks", () => {
+    const content = "See [[Note#Section]]";
+    const links = extractLinks(content);
+    expect(links.wikilinks).toEqual(["Note"]);
+  });
+
+  test("extracts markdown links (internal only)", () => {
+    const content = "[link](./other.md) and [ext](https://example.com)";
+    const links = extractLinks(content);
+    expect(links.outgoing).toContain("./other.md");
+    expect(links.outgoing).not.toContain("https://example.com");
+  });
+
+  test("returns empty for no links", () => {
+    const links = extractLinks("No links");
+    expect(links.wikilinks).toEqual([]);
+    expect(links.outgoing).toEqual([]);
+  });
+});
