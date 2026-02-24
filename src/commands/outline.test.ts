@@ -4,20 +4,21 @@ import { outline } from "./outline.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 beforeEach(() => {
   v = createTempVault({
-    "doc.md": "# Title\n\nText\n\n## Section A\n\nMore\n\n### Subsection\n\n## Section B",
+    "doc.md":
+      "# Title\n\nText\n\n## Section A\n\nMore\n\n### Subsection\n\n## Section B",
   });
 });
 
@@ -27,7 +28,9 @@ afterEach(() => {
 
 describe("outline", () => {
   test("returns headings as json", async () => {
-    const data = await captureJson(() => outline({ json: true, vault: v.path, file: "doc" }));
+    const data = await captureJson(() =>
+      outline({ json: true, vault: v.path, file: "doc" }),
+    );
     const h = data.headings as { level: number; text: string }[];
     expect(h.length).toBe(4);
     expect(h[0]).toEqual({ level: 1, text: "Title", line: 1 });
@@ -37,7 +40,9 @@ describe("outline", () => {
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => outline({ json: true, vault: v.path, file: "doc", total: true }));
+    const data = await captureJson(() =>
+      outline({ json: true, vault: v.path, file: "doc", total: true }),
+    );
     expect(data.total).toBe(4);
   });
 });

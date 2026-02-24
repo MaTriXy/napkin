@@ -4,15 +4,15 @@ import { aliases } from "./aliases.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 beforeEach(() => {
@@ -29,7 +29,9 @@ afterEach(() => {
 
 describe("aliases", () => {
   test("lists all aliases", async () => {
-    const data = await captureJson(() => aliases({ json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      aliases({ json: true, vault: v.path }),
+    );
     const a = data.aliases as string[];
     expect(a).toContain("Alpha");
     expect(a).toContain("A1");
@@ -38,18 +40,24 @@ describe("aliases", () => {
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => aliases({ json: true, vault: v.path, total: true }));
+    const data = await captureJson(() =>
+      aliases({ json: true, vault: v.path, total: true }),
+    );
     expect(data.total).toBe(3);
   });
 
   test("filters by file", async () => {
-    const data = await captureJson(() => aliases({ json: true, vault: v.path, file: "note1" }));
+    const data = await captureJson(() =>
+      aliases({ json: true, vault: v.path, file: "note1" }),
+    );
     const a = data.aliases as string[];
     expect(a).toEqual(["Alpha", "A1"]);
   });
 
   test("verbose includes file paths", async () => {
-    const data = await captureJson(() => aliases({ json: true, vault: v.path, verbose: true }));
+    const data = await captureJson(() =>
+      aliases({ json: true, vault: v.path, verbose: true }),
+    );
     const a = data.aliases as { alias: string; file: string }[];
     expect(a[0].file).toBeTruthy();
   });

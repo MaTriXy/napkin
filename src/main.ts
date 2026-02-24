@@ -2,23 +2,60 @@
 
 import { createRequire } from "node:module";
 import { Command } from "commander";
-import { vault } from "./commands/vault.js";
-import { file, files, folder, folders } from "./commands/files.js";
 import { aliases } from "./commands/aliases.js";
-import { canvases, canvasRead, canvasNodes, canvasCreate, canvasAddNode, canvasAddEdge, canvasRemoveNode } from "./commands/canvas.js";
-import { bases, baseViews, baseQuery, baseCreate } from "./commands/bases.js";
-import { bookmarks, bookmark } from "./commands/bookmarks.js";
-import { read, create, append, prepend, move, rename, del } from "./commands/crud.js";
-import { daily, dailyPath, dailyRead, dailyAppend, dailyPrepend } from "./commands/daily.js";
-import { search, searchContext } from "./commands/search.js";
-import { tags, tag } from "./commands/tags.js";
-import { properties, propertySet, propertyRemove, propertyRead } from "./commands/properties.js";
-import { tasks, task } from "./commands/tasks.js";
-import { backlinks, links, unresolvedLinks, orphans, deadends } from "./commands/links.js";
-import { outline } from "./commands/outline.js";
-import { templates, templateRead, templateInsert } from "./commands/templates.js";
-import { wordcount } from "./commands/wordcount.js";
+import { baseCreate, baseQuery, bases, baseViews } from "./commands/bases.js";
+import { bookmark, bookmarks } from "./commands/bookmarks.js";
+import {
+  canvasAddEdge,
+  canvasAddNode,
+  canvasCreate,
+  canvases,
+  canvasNodes,
+  canvasRead,
+  canvasRemoveNode,
+} from "./commands/canvas.js";
+import {
+  append,
+  create,
+  del,
+  move,
+  prepend,
+  read,
+  rename,
+} from "./commands/crud.js";
+import {
+  daily,
+  dailyAppend,
+  dailyPath,
+  dailyPrepend,
+  dailyRead,
+} from "./commands/daily.js";
+import { file, files, folder, folders } from "./commands/files.js";
+import {
+  backlinks,
+  deadends,
+  links,
+  orphans,
+  unresolvedLinks,
+} from "./commands/links.js";
 import { onboard } from "./commands/onboard.js";
+import { outline } from "./commands/outline.js";
+import {
+  properties,
+  propertyRead,
+  propertyRemove,
+  propertySet,
+} from "./commands/properties.js";
+import { search, searchContext } from "./commands/search.js";
+import { tag, tags } from "./commands/tags.js";
+import { task, tasks } from "./commands/tasks.js";
+import {
+  templateInsert,
+  templateRead,
+  templates,
+} from "./commands/templates.js";
+import { vault } from "./commands/vault.js";
+import { wordcount } from "./commands/wordcount.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json");
@@ -91,7 +128,6 @@ program
     const root = { ...cmd.optsWithGlobals(), ...opts };
     await folders(root);
   });
-
 
 program
   .command("read <file>")
@@ -609,20 +645,29 @@ program.hook("preAction", () => {
   if (opts.copy) {
     process.stdout.write = (chunk: string | Uint8Array, ...args: unknown[]) => {
       capturedOutput += chunk.toString();
-      return origWrite(chunk, ...args as [BufferEncoding?, ((err?: Error) => void)?]);
+      return origWrite(
+        chunk,
+        ...(args as [
+          BufferEncoding?,
+          ((err?: Error | null | undefined) => void)?,
+        ]),
+      );
     };
   }
 });
 
-program.parseAsync(process.argv).then(async () => {
-  const opts = program.opts();
-  if (opts.copy && capturedOutput.trim()) {
-    const { exec } = await import("node:child_process");
-    const proc = exec("pbcopy");
-    proc.stdin?.write(capturedOutput);
-    proc.stdin?.end();
-  }
-}).catch((err) => {
-  console.error("Fatal error:", err.message);
-  process.exit(1);
-});
+program
+  .parseAsync(process.argv)
+  .then(async () => {
+    const opts = program.opts();
+    if (opts.copy && capturedOutput.trim()) {
+      const { exec } = await import("node:child_process");
+      const proc = exec("pbcopy");
+      proc.stdin?.write(capturedOutput);
+      proc.stdin?.end();
+    }
+  })
+  .catch((err) => {
+    console.error("Fatal error:", err.message);
+    process.exit(1);
+  });

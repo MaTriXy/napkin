@@ -1,10 +1,14 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { listFiles, resolveFile } from "../utils/files.js";
-import { parseFrontmatter, setProperty as setProp, removeProperty as removeProp } from "../utils/frontmatter.js";
-import { type OutputOptions, output, error, success, dim, bold } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import {
+  parseFrontmatter,
+  removeProperty as removeProp,
+  setProperty as setProp,
+} from "../utils/frontmatter.js";
+import { error, type OutputOptions, output, success } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 function collectProperties(
   vaultPath: string,
@@ -30,17 +34,19 @@ function collectProperties(
   return propCounts;
 }
 
-export async function properties(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  counts?: boolean;
-  total?: boolean;
-  sort?: string;
-}) {
+export async function properties(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    counts?: boolean;
+    total?: boolean;
+    sort?: string;
+  },
+) {
   const v = findVault(opts.vault);
   const propCounts = collectProperties(v.path, opts.file);
 
-  let entries = [...propCounts.entries()];
+  const entries = [...propCounts.entries()];
   if (opts.sort === "count") {
     entries.sort((a, b) => b[1] - a[1]);
   } else {
@@ -65,12 +71,14 @@ export async function properties(opts: OutputOptions & {
   });
 }
 
-export async function propertySet(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  name?: string;
-  value?: string;
-}) {
+export async function propertySet(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    name?: string;
+    value?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.name || opts.value === undefined) {
     error("Usage: property:set --name <name> --value <value> --file <file>");
@@ -94,7 +102,8 @@ export async function propertySet(opts: OutputOptions & {
   let parsedValue: unknown = opts.value;
   if (opts.value === "true") parsedValue = true;
   else if (opts.value === "false") parsedValue = false;
-  else if (!Number.isNaN(Number(opts.value)) && opts.value.trim() !== "") parsedValue = Number(opts.value);
+  else if (!Number.isNaN(Number(opts.value)) && opts.value.trim() !== "")
+    parsedValue = Number(opts.value);
 
   const updated = setProp(content, opts.name, parsedValue);
   fs.writeFileSync(fullPath, updated);
@@ -105,7 +114,9 @@ export async function propertySet(opts: OutputOptions & {
   });
 }
 
-export async function propertyRemove(opts: OutputOptions & { vault?: string; file?: string; name?: string }) {
+export async function propertyRemove(
+  opts: OutputOptions & { vault?: string; file?: string; name?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.name) {
     error("No property name specified. Use --name <name>");
@@ -133,7 +144,9 @@ export async function propertyRemove(opts: OutputOptions & { vault?: string; fil
   });
 }
 
-export async function propertyRead(opts: OutputOptions & { vault?: string; file?: string; name?: string }) {
+export async function propertyRead(
+  opts: OutputOptions & { vault?: string; file?: string; name?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.name) {
     error("No property name specified. Use --name <name>");

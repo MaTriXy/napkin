@@ -1,9 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault, getVaultConfig } from "../utils/vault.js";
-import { parseFrontmatter } from "../utils/frontmatter.js";
-import { type OutputOptions, output, error, success } from "../utils/output.js";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import { parseFrontmatter } from "../utils/frontmatter.js";
+import { error, type OutputOptions, output, success } from "../utils/output.js";
+import { findVault, getVaultConfig } from "../utils/vault.js";
 
 interface DailyConfig {
   folder: string;
@@ -12,7 +12,10 @@ interface DailyConfig {
 }
 
 function getDailyConfig(vaultPath: string): DailyConfig {
-  const config = getVaultConfig(vaultPath, "daily-notes.json") as Partial<DailyConfig> | null;
+  const config = getVaultConfig(
+    vaultPath,
+    "daily-notes.json",
+  ) as Partial<DailyConfig> | null;
   return {
     folder: config?.folder || "",
     format: config?.format || "YYYY-MM-DD",
@@ -25,7 +28,15 @@ function getDailyConfig(vaultPath: string): DailyConfig {
  * Supports: YYYY, YY, MM, M, DD, D, ddd, dddd, HH, H, mm, m, ss, s
  */
 function formatDate(date: Date, format: string): string {
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const shortDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return format
@@ -104,7 +115,9 @@ export async function dailyRead(opts: OutputOptions & { vault?: string }) {
   });
 }
 
-export async function dailyAppend(opts: OutputOptions & { vault?: string; content?: string; inline?: boolean }) {
+export async function dailyAppend(
+  opts: OutputOptions & { vault?: string; content?: string; inline?: boolean },
+) {
   const v = findVault(opts.vault);
   if (!opts.content) {
     error("No content specified. Use --content <text>");
@@ -130,7 +143,9 @@ export async function dailyAppend(opts: OutputOptions & { vault?: string; conten
   });
 }
 
-export async function dailyPrepend(opts: OutputOptions & { vault?: string; content?: string; inline?: boolean }) {
+export async function dailyPrepend(
+  opts: OutputOptions & { vault?: string; content?: string; inline?: boolean },
+) {
   const v = findVault(opts.vault);
   if (!opts.content) {
     error("No content specified. Use --content <text>");

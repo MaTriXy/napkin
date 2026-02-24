@@ -1,20 +1,20 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
-import { read, create, append, prepend, move, rename, del } from "./crud.js";
+import { append, create, del, move, prepend, read, rename } from "./crud.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 beforeEach(() => {
@@ -31,7 +31,9 @@ afterEach(() => {
 
 describe("read", () => {
   test("reads file content", async () => {
-    const data = await captureJson(() => read("README", { json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      read("README", { json: true, vault: v.path }),
+    );
     expect(data.content).toContain("Welcome");
   });
 });
@@ -48,7 +50,12 @@ describe("create", () => {
 
   test("creates from template", async () => {
     const data = await captureJson(() =>
-      create({ json: true, vault: v.path, name: "Today", template: "Daily Note" }),
+      create({
+        json: true,
+        vault: v.path,
+        name: "Today",
+        template: "Daily Note",
+      }),
     );
     expect(data.created).toBe(true);
     const content = fs.readFileSync(path.join(v.path, "Today.md"), "utf-8");
@@ -57,9 +64,17 @@ describe("create", () => {
 
   test("creates with path in subfolder", async () => {
     await captureJson(() =>
-      create({ json: true, vault: v.path, path: "Archive/old-note", content: "archived" }),
+      create({
+        json: true,
+        vault: v.path,
+        path: "Archive/old-note",
+        content: "archived",
+      }),
     );
-    const content = fs.readFileSync(path.join(v.path, "Archive/old-note.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.path, "Archive/old-note.md"),
+      "utf-8",
+    );
     expect(content).toBe("archived");
   });
 });
@@ -67,7 +82,12 @@ describe("create", () => {
 describe("append", () => {
   test("appends content to file", async () => {
     await captureJson(() =>
-      append({ json: true, vault: v.path, file: "README", content: "New line" }),
+      append({
+        json: true,
+        vault: v.path,
+        file: "README",
+        content: "New line",
+      }),
     );
     const content = fs.readFileSync(path.join(v.path, "README.md"), "utf-8");
     expect(content).toContain("Welcome\nNew line");
@@ -75,7 +95,13 @@ describe("append", () => {
 
   test("appends inline without newline", async () => {
     await captureJson(() =>
-      append({ json: true, vault: v.path, file: "README", content: " extra", inline: true }),
+      append({
+        json: true,
+        vault: v.path,
+        file: "README",
+        content: " extra",
+        inline: true,
+      }),
     );
     const content = fs.readFileSync(path.join(v.path, "README.md"), "utf-8");
     expect(content).toContain("Welcome extra");
@@ -85,9 +111,17 @@ describe("append", () => {
 describe("prepend", () => {
   test("prepends after frontmatter", async () => {
     await captureJson(() =>
-      prepend({ json: true, vault: v.path, file: "Projects/note.md", content: "Prepended" }),
+      prepend({
+        json: true,
+        vault: v.path,
+        file: "Projects/note.md",
+        content: "Prepended",
+      }),
     );
-    const content = fs.readFileSync(path.join(v.path, "Projects/note.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.path, "Projects/note.md"),
+      "utf-8",
+    );
     expect(content).toContain("title: Note");
     // Prepended should come before Body content
     const prependIdx = content.indexOf("Prepended");
@@ -118,9 +152,7 @@ describe("rename", () => {
 
 describe("delete", () => {
   test("moves file to .trash by default", async () => {
-    await captureJson(() =>
-      del({ json: true, vault: v.path, file: "README" }),
-    );
+    await captureJson(() => del({ json: true, vault: v.path, file: "README" }));
     expect(fs.existsSync(path.join(v.path, "README.md"))).toBe(false);
     expect(fs.existsSync(path.join(v.path, ".trash/README.md"))).toBe(true);
   });

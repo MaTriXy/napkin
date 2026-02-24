@@ -1,10 +1,17 @@
+import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as crypto from "node:crypto";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import { listFiles } from "../utils/files.js";
+import {
+  bold,
+  dim,
+  error,
+  type OutputOptions,
+  output,
+  success,
+} from "../utils/output.js";
 import { findVault } from "../utils/vault.js";
-import { listFiles, resolveFile } from "../utils/files.js";
-import { type OutputOptions, output, error, success, dim, bold } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
 
 interface CanvasNode {
   id: string;
@@ -44,7 +51,10 @@ function genId(): string {
   return crypto.randomBytes(8).toString("hex");
 }
 
-function readCanvas(vaultPath: string, fileRef: string): { canvas: Canvas; filePath: string } {
+function readCanvas(
+  vaultPath: string,
+  fileRef: string,
+): { canvas: Canvas; filePath: string } {
   // Try resolving as .canvas file
   let filePath = fileRef;
   if (!filePath.endsWith(".canvas")) filePath = `${filePath}.canvas`;
@@ -54,7 +64,9 @@ function readCanvas(vaultPath: string, fileRef: string): { canvas: Canvas; fileP
     // Search by name
     const all = listFiles(vaultPath).filter((f) => f.endsWith(".canvas"));
     const target = fileRef.toLowerCase().replace(/\.canvas$/, "");
-    const found = all.find((f) => path.basename(f, ".canvas").toLowerCase() === target);
+    const found = all.find(
+      (f) => path.basename(f, ".canvas").toLowerCase() === target,
+    );
     if (!found) {
       error(`Canvas not found: ${fileRef}`);
       process.exit(EXIT_NOT_FOUND);
@@ -69,11 +81,20 @@ function readCanvas(vaultPath: string, fileRef: string): { canvas: Canvas; fileP
   return { canvas, filePath };
 }
 
-function writeCanvas(vaultPath: string, filePath: string, canvas: Canvas): void {
-  fs.writeFileSync(path.join(vaultPath, filePath), JSON.stringify(canvas, null, 2));
+function writeCanvas(
+  vaultPath: string,
+  filePath: string,
+  canvas: Canvas,
+): void {
+  fs.writeFileSync(
+    path.join(vaultPath, filePath),
+    JSON.stringify(canvas, null, 2),
+  );
 }
 
-export async function canvases(opts: OutputOptions & { vault?: string; total?: boolean }) {
+export async function canvases(
+  opts: OutputOptions & { vault?: string; total?: boolean },
+) {
   const v = findVault(opts.vault);
   const files = listFiles(v.path).filter((f) => f.endsWith(".canvas"));
 
@@ -91,7 +112,9 @@ export async function canvases(opts: OutputOptions & { vault?: string; total?: b
   });
 }
 
-export async function canvasRead(opts: OutputOptions & { vault?: string; file?: string }) {
+export async function canvasRead(
+  opts: OutputOptions & { vault?: string; file?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -107,25 +130,36 @@ export async function canvasRead(opts: OutputOptions & { vault?: string; file?: 
       console.log(`${canvas.nodes.length} nodes, ${canvas.edges.length} edges`);
       console.log();
       for (const node of canvas.nodes) {
-        const desc = node.type === "text" ? (node.text?.split("\n")[0] || "").slice(0, 60)
-          : node.type === "file" ? node.file
-          : node.type === "link" ? node.url
-          : node.type === "group" ? (node.label || "(unnamed group)")
-          : "";
-        console.log(`  ${dim(node.id.slice(0, 8))}  ${node.type.padEnd(6)} ${desc}`);
+        const desc =
+          node.type === "text"
+            ? (node.text?.split("\n")[0] || "").slice(0, 60)
+            : node.type === "file"
+              ? node.file
+              : node.type === "link"
+                ? node.url
+                : node.type === "group"
+                  ? node.label || "(unnamed group)"
+                  : "";
+        console.log(
+          `  ${dim(node.id.slice(0, 8))}  ${node.type.padEnd(6)} ${desc}`,
+        );
       }
       if (canvas.edges.length > 0) {
         console.log();
         for (const edge of canvas.edges) {
           const label = edge.label ? ` "${edge.label}"` : "";
-          console.log(`  ${dim(edge.id.slice(0, 8))}  ${edge.fromNode.slice(0, 8)} → ${edge.toNode.slice(0, 8)}${label}`);
+          console.log(
+            `  ${dim(edge.id.slice(0, 8))}  ${edge.fromNode.slice(0, 8)} → ${edge.toNode.slice(0, 8)}${label}`,
+          );
         }
       }
     },
   });
 }
 
-export async function canvasNodes(opts: OutputOptions & { vault?: string; file?: string; type?: string }) {
+export async function canvasNodes(
+  opts: OutputOptions & { vault?: string; file?: string; type?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -142,24 +176,32 @@ export async function canvasNodes(opts: OutputOptions & { vault?: string; file?:
     json: () => ({ nodes }),
     human: () => {
       for (const node of nodes) {
-        const desc = node.type === "text" ? (node.text?.split("\n")[0] || "").slice(0, 60)
-          : node.type === "file" ? node.file
-          : node.type === "link" ? node.url
-          : node.label || "";
+        const desc =
+          node.type === "text"
+            ? (node.text?.split("\n")[0] || "").slice(0, 60)
+            : node.type === "file"
+              ? node.file
+              : node.type === "link"
+                ? node.url
+                : node.label || "";
         console.log(`${node.id}  ${node.type.padEnd(6)} ${desc}`);
       }
     },
   });
 }
 
-export async function canvasCreate(opts: OutputOptions & { vault?: string; file?: string; path?: string }) {
+export async function canvasCreate(
+  opts: OutputOptions & { vault?: string; file?: string; path?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file name specified. Use --file <name>");
     process.exit(EXIT_USER_ERROR);
   }
 
-  const fileName = opts.file.endsWith(".canvas") ? opts.file : `${opts.file}.canvas`;
+  const fileName = opts.file.endsWith(".canvas")
+    ? opts.file
+    : `${opts.file}.canvas`;
   const targetPath = opts.path ? `${opts.path}/${fileName}` : fileName;
   const fullPath = path.join(v.path, targetPath);
 
@@ -178,21 +220,23 @@ export async function canvasCreate(opts: OutputOptions & { vault?: string; file?
   });
 }
 
-export async function canvasAddNode(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  type?: string;
-  text?: string;
-  noteFile?: string;
-  subpath?: string;
-  url?: string;
-  label?: string;
-  x?: string;
-  y?: string;
-  width?: string;
-  height?: string;
-  color?: string;
-}) {
+export async function canvasAddNode(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    type?: string;
+    text?: string;
+    noteFile?: string;
+    subpath?: string;
+    url?: string;
+    label?: string;
+    x?: string;
+    y?: string;
+    width?: string;
+    height?: string;
+    color?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No canvas file specified. Use --file <name>");
@@ -213,10 +257,22 @@ export async function canvasAddNode(opts: OutputOptions & {
   const node: CanvasNode = {
     id: genId(),
     type: nodeType,
-    x: opts.x ? Number.parseInt(opts.x) : (canvas.nodes.length > 0 ? maxX + 50 : 0),
-    y: opts.y ? Number.parseInt(opts.y) : 0,
-    width: opts.width ? Number.parseInt(opts.width) : (nodeType === "group" ? 600 : 300),
-    height: opts.height ? Number.parseInt(opts.height) : (nodeType === "group" ? 400 : 150),
+    x: opts.x
+      ? Number.parseInt(opts.x, 10)
+      : canvas.nodes.length > 0
+        ? maxX + 50
+        : 0,
+    y: opts.y ? Number.parseInt(opts.y, 10) : 0,
+    width: opts.width
+      ? Number.parseInt(opts.width, 10)
+      : nodeType === "group"
+        ? 600
+        : 300,
+    height: opts.height
+      ? Number.parseInt(opts.height, 10)
+      : nodeType === "group"
+        ? 400
+        : 150,
   };
 
   if (nodeType === "text") node.text = opts.text || "";
@@ -237,16 +293,18 @@ export async function canvasAddNode(opts: OutputOptions & {
   });
 }
 
-export async function canvasAddEdge(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  from?: string;
-  to?: string;
-  fromSide?: string;
-  toSide?: string;
-  label?: string;
-  color?: string;
-}) {
+export async function canvasAddEdge(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    from?: string;
+    to?: string;
+    fromSide?: string;
+    toSide?: string;
+    label?: string;
+    color?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No canvas file specified. Use --file <name>");
@@ -265,8 +323,14 @@ export async function canvasAddEdge(opts: OutputOptions & {
 
   const fromNode = findNode(opts.from);
   const toNode = findNode(opts.to);
-  if (!fromNode) { error(`Node not found: ${opts.from}`); process.exit(EXIT_NOT_FOUND); }
-  if (!toNode) { error(`Node not found: ${opts.to}`); process.exit(EXIT_NOT_FOUND); }
+  if (!fromNode) {
+    error(`Node not found: ${opts.from}`);
+    process.exit(EXIT_NOT_FOUND);
+  }
+  if (!toNode) {
+    error(`Node not found: ${opts.to}`);
+    process.exit(EXIT_NOT_FOUND);
+  }
 
   const edge: CanvasEdge = {
     id: genId(),
@@ -283,16 +347,26 @@ export async function canvasAddEdge(opts: OutputOptions & {
   writeCanvas(v.path, filePath, canvas);
 
   output(opts, {
-    json: () => ({ id: edge.id, from: edge.fromNode, to: edge.toNode, added: true }),
-    human: () => success(`Added edge ${edge.fromNode.slice(0, 8)} → ${edge.toNode.slice(0, 8)}`),
+    json: () => ({
+      id: edge.id,
+      from: edge.fromNode,
+      to: edge.toNode,
+      added: true,
+    }),
+    human: () =>
+      success(
+        `Added edge ${edge.fromNode.slice(0, 8)} → ${edge.toNode.slice(0, 8)}`,
+      ),
   });
 }
 
-export async function canvasRemoveNode(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  id?: string;
-}) {
+export async function canvasRemoveNode(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    id?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file || !opts.id) {
     error("Both --file and --id required");
@@ -300,12 +374,20 @@ export async function canvasRemoveNode(opts: OutputOptions & {
   }
 
   const { canvas, filePath } = readCanvas(v.path, opts.file);
-  const node = canvas.nodes.find((n) => n.id === opts.id || n.id.startsWith(opts.id!));
-  if (!node) { error(`Node not found: ${opts.id}`); process.exit(EXIT_NOT_FOUND); }
+  const id = opts.id;
+  const node = canvas.nodes.find(
+    (n) => n.id === id || n.id.startsWith(id as string),
+  );
+  if (!node) {
+    error(`Node not found: ${opts.id}`);
+    process.exit(EXIT_NOT_FOUND);
+  }
 
   // Remove node and any connected edges
   canvas.nodes = canvas.nodes.filter((n) => n.id !== node.id);
-  canvas.edges = canvas.edges.filter((e) => e.fromNode !== node.id && e.toNode !== node.id);
+  canvas.edges = canvas.edges.filter(
+    (e) => e.fromNode !== node.id && e.toNode !== node.id,
+  );
   writeCanvas(v.path, filePath, canvas);
 
   output(opts, {

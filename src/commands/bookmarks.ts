@@ -1,8 +1,14 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault, getVaultConfig } from "../utils/vault.js";
-import { type OutputOptions, output, error, success, dim } from "../utils/output.js";
 import { EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import {
+  dim,
+  error,
+  type OutputOptions,
+  output,
+  success,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 interface Bookmark {
   type: string;
@@ -41,11 +47,13 @@ function flattenBookmarks(items: Bookmark[]): Bookmark[] {
   return result;
 }
 
-export async function bookmarks(opts: OutputOptions & {
-  vault?: string;
-  total?: boolean;
-  verbose?: boolean;
-}) {
+export async function bookmarks(
+  opts: OutputOptions & {
+    vault?: string;
+    total?: boolean;
+    verbose?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   const items = readBookmarks(v.path);
   const flat = flattenBookmarks(items);
@@ -65,20 +73,27 @@ export async function bookmarks(opts: OutputOptions & {
   });
 }
 
-export async function bookmark(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  subpath?: string;
-  folder?: string;
-  search?: string;
-  url?: string;
-  title?: string;
-}) {
+export async function bookmark(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    subpath?: string;
+    folder?: string;
+    search?: string;
+    url?: string;
+    title?: string;
+  },
+) {
   const v = findVault(opts.vault);
 
   let entry: Bookmark;
   if (opts.file) {
-    entry = { type: "file", path: opts.file, title: opts.title, subpath: opts.subpath };
+    entry = {
+      type: "file",
+      path: opts.file,
+      title: opts.title,
+      subpath: opts.subpath,
+    };
   } else if (opts.folder) {
     entry = { type: "folder", path: opts.folder, title: opts.title };
   } else if (opts.search) {
@@ -96,6 +111,7 @@ export async function bookmark(opts: OutputOptions & {
 
   output(opts, {
     json: () => ({ added: entry }),
-    human: () => success(`Bookmarked ${entry.path || entry.query || entry.url}`),
+    human: () =>
+      success(`Bookmarked ${entry.path || entry.query || entry.url}`),
   });
 }

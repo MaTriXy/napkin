@@ -63,8 +63,11 @@ export function extractTags(content: string): string[] {
   const tags = new Set<string>();
   // Inline tags: #tag (not inside code blocks or links)
   const tagRegex = /(?:^|\s)#([a-zA-Z][\w/-]*)/g;
-  let match: RegExpExecArray | null;
-  while ((match = tagRegex.exec(content)) !== null) {
+  for (
+    let match = tagRegex.exec(content);
+    match !== null;
+    match = tagRegex.exec(content)
+  ) {
     tags.add(match[1]);
   }
   return [...tags].sort();
@@ -79,8 +82,11 @@ export function extractLinks(content: string): LinkInfo {
 
   // Wikilinks: [[target]] or [[target|alias]]
   const wikiRegex = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
-  let match: RegExpExecArray | null;
-  while ((match = wikiRegex.exec(content)) !== null) {
+  for (
+    let match = wikiRegex.exec(content);
+    match !== null;
+    match = wikiRegex.exec(content)
+  ) {
     const target = match[1].trim();
     // Strip heading/block refs
     const clean = target.split("#")[0].trim();
@@ -92,7 +98,11 @@ export function extractLinks(content: string): LinkInfo {
 
   // Markdown links: [text](url)
   const mdRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
-  while ((match = mdRegex.exec(content)) !== null) {
+  for (
+    let match = mdRegex.exec(content);
+    match !== null;
+    match = mdRegex.exec(content)
+  ) {
     const url = match[2].trim();
     // Only internal links (not http/https/mailto)
     if (!url.match(/^(https?|mailto|obsidian):\/\//)) {

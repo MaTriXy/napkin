@@ -21,7 +21,11 @@ export function parseFrontmatter(content: string): ParsedFrontmatter {
 /**
  * Set a property in frontmatter, creating the --- block if needed.
  */
-export function setProperty(content: string, name: string, value: unknown): string {
+export function setProperty(
+  content: string,
+  name: string,
+  value: unknown,
+): string {
   const result = matter(content);
   const data = { ...result.data, [name]: value };
   return matter.stringify(result.content, data);

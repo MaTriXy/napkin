@@ -1,11 +1,17 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
+import { EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { listFiles, resolveFile } from "../utils/files.js";
-import { extractTags } from "../utils/markdown.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
-import { type OutputOptions, output, error, dim, bold } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import { extractTags } from "../utils/markdown.js";
+import {
+  bold,
+  dim,
+  error,
+  type OutputOptions,
+  output,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 function collectTags(
   vaultPath: string,
@@ -35,24 +41,26 @@ function collectTags(
     for (const tag of allTags) {
       tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
       if (!tagFiles.has(tag)) tagFiles.set(tag, []);
-      tagFiles.get(tag)!.push(file);
+      tagFiles.get(tag)?.push(file);
     }
   }
 
   return { tagCounts, tagFiles };
 }
 
-export async function tags(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  counts?: boolean;
-  total?: boolean;
-  sort?: string;
-}) {
+export async function tags(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    counts?: boolean;
+    total?: boolean;
+    sort?: string;
+  },
+) {
   const v = findVault(opts.vault);
   const { tagCounts } = collectTags(v.path, opts.file);
 
-  let entries = [...tagCounts.entries()];
+  const entries = [...tagCounts.entries()];
   if (opts.sort === "count") {
     entries.sort((a, b) => b[1] - a[1]);
   } else {
@@ -77,7 +85,9 @@ export async function tags(opts: OutputOptions & {
   });
 }
 
-export async function tag(opts: OutputOptions & { vault?: string; name?: string; verbose?: boolean }) {
+export async function tag(
+  opts: OutputOptions & { vault?: string; name?: string; verbose?: boolean },
+) {
   const v = findVault(opts.vault);
   if (!opts.name) {
     error("No tag name specified. Use --name <tag>");
@@ -91,7 +101,9 @@ export async function tag(opts: OutputOptions & { vault?: string; name?: string;
   output(opts, {
     json: () => ({ tag: opts.name, count, ...(opts.verbose ? { files } : {}) }),
     human: () => {
-      console.log(`${bold(opts.name!)}  ${count} occurrence${count !== 1 ? "s" : ""}`);
+      console.log(
+        `${bold(opts.name as string)}  ${count} occurrence${count !== 1 ? "s" : ""}`,
+      );
       if (opts.verbose) {
         for (const f of files) console.log(`  ${dim(f)}`);
       }

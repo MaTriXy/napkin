@@ -1,16 +1,20 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault, getVaultConfig } from "../utils/vault.js";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { listFiles, resolveFile } from "../utils/files.js";
-import { type OutputOptions, output, error, success } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import { error, type OutputOptions, output, success } from "../utils/output.js";
+import { findVault, getVaultConfig } from "../utils/vault.js";
 
 function getTemplateFolder(vaultPath: string): string {
-  const config = getVaultConfig(vaultPath, "templates.json") as { folder?: string } | null;
+  const config = getVaultConfig(vaultPath, "templates.json") as {
+    folder?: string;
+  } | null;
   return config?.folder || "Templates";
 }
 
-export async function templates(opts: OutputOptions & { vault?: string; total?: boolean }) {
+export async function templates(
+  opts: OutputOptions & { vault?: string; total?: boolean },
+) {
   const v = findVault(opts.vault);
   const folder = getTemplateFolder(v.path);
   const files = listFiles(v.path, { folder, ext: "md" }).map((f) =>
@@ -26,12 +30,14 @@ export async function templates(opts: OutputOptions & { vault?: string; total?: 
   });
 }
 
-export async function templateRead(opts: OutputOptions & {
-  vault?: string;
-  name?: string;
-  resolve?: boolean;
-  title?: string;
-}) {
+export async function templateRead(
+  opts: OutputOptions & {
+    vault?: string;
+    name?: string;
+    resolve?: boolean;
+    title?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.name) {
     error("No template name specified. Use --name <template>");
@@ -39,7 +45,9 @@ export async function templateRead(opts: OutputOptions & {
   }
 
   const folder = getTemplateFolder(v.path);
-  const resolved = resolveFile(v.path, `${folder}/${opts.name}`) || resolveFile(v.path, opts.name);
+  const resolved =
+    resolveFile(v.path, `${folder}/${opts.name}`) ||
+    resolveFile(v.path, opts.name);
   if (!resolved) {
     error(`Template not found: ${opts.name}`);
     process.exit(EXIT_NOT_FOUND);
@@ -63,11 +71,13 @@ export async function templateRead(opts: OutputOptions & {
   });
 }
 
-export async function templateInsert(opts: OutputOptions & {
-  vault?: string;
-  name?: string;
-  file?: string;
-}) {
+export async function templateInsert(
+  opts: OutputOptions & {
+    vault?: string;
+    name?: string;
+    file?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.name) {
     error("No template name specified. Use --name <template>");
@@ -79,7 +89,9 @@ export async function templateInsert(opts: OutputOptions & {
   }
 
   const folder = getTemplateFolder(v.path);
-  const templateResolved = resolveFile(v.path, `${folder}/${opts.name}`) || resolveFile(v.path, opts.name);
+  const templateResolved =
+    resolveFile(v.path, `${folder}/${opts.name}`) ||
+    resolveFile(v.path, opts.name);
   if (!templateResolved) {
     error(`Template not found: ${opts.name}`);
     process.exit(EXIT_NOT_FOUND);
@@ -91,7 +103,10 @@ export async function templateInsert(opts: OutputOptions & {
     process.exit(EXIT_NOT_FOUND);
   }
 
-  let templateContent = fs.readFileSync(path.join(v.path, templateResolved), "utf-8");
+  let templateContent = fs.readFileSync(
+    path.join(v.path, templateResolved),
+    "utf-8",
+  );
 
   // Resolve variables
   const now = new Date();
@@ -109,6 +124,7 @@ export async function templateInsert(opts: OutputOptions & {
 
   output(opts, {
     json: () => ({ file: targetResolved, template: opts.name, inserted: true }),
-    human: () => success(`Inserted template "${opts.name}" into ${targetResolved}`),
+    human: () =>
+      success(`Inserted template "${opts.name}" into ${targetResolved}`),
   });
 }

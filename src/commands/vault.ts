@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
 import { listFiles, listFolders } from "../utils/files.js";
-import { type OutputOptions, output, bold, dim } from "../utils/output.js";
+import { bold, dim, type OutputOptions, output } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 function getVaultSize(vaultPath: string): number {
   let total = 0;

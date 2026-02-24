@@ -1,17 +1,19 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { resolveFile } from "../utils/files.js";
 import { extractHeadings } from "../utils/markdown.js";
-import { type OutputOptions, output, error } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import { error, type OutputOptions, output } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
-export async function outline(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  format?: string;
-  total?: boolean;
-}) {
+export async function outline(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    format?: string;
+    total?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");

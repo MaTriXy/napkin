@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { parseFrontmatter, setProperty, removeProperty } from "./frontmatter.js";
+import {
+  parseFrontmatter,
+  removeProperty,
+  setProperty,
+} from "./frontmatter.js";
 
 describe("parseFrontmatter", () => {
   test("parses YAML frontmatter", () => {

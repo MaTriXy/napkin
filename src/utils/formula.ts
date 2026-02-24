@@ -3,22 +3,55 @@ import Jexl from "jexl";
 // All known transforms (methods that Obsidian calls with dot syntax)
 const TRANSFORMS = new Set([
   // Any
-  "isTruthy", "isType", "toString",
+  "isTruthy",
+  "isType",
+  "toString",
   // Number
-  "abs", "ceil", "floor", "round", "toFixed", "isEmpty",
+  "abs",
+  "ceil",
+  "floor",
+  "round",
+  "toFixed",
+  "isEmpty",
   // String
-  "contains", "containsAll", "containsAny", "startsWith", "endsWith",
-  "lower", "title", "trim", "replace", "repeat", "reverse", "slice", "split",
+  "contains",
+  "containsAll",
+  "containsAny",
+  "startsWith",
+  "endsWith",
+  "lower",
+  "title",
+  "trim",
+  "replace",
+  "repeat",
+  "reverse",
+  "slice",
+  "split",
   // Date
-  "format", "date", "time", "relative",
+  "format",
+  "date",
+  "time",
+  "relative",
   // List
-  "filter", "map", "reduce", "flat", "join", "sort", "unique",
+  "filter",
+  "map",
+  "reduce",
+  "flat",
+  "join",
+  "sort",
+  "unique",
   // File
-  "asLink", "hasLink", "hasTag", "hasProperty", "inFolder",
+  "asLink",
+  "hasLink",
+  "hasTag",
+  "hasProperty",
+  "inFolder",
   // Link
-  "asFile", "linksTo",
+  "asFile",
+  "linksTo",
   // Object
-  "keys", "values",
+  "keys",
+  "values",
   // Regex
   "matches",
 ]);
@@ -48,7 +81,20 @@ export function obsidianToJexl(expr: string): string {
 
   // Handle .isEmpty() with no args — it's already converted above if it matches
   // Handle .year, .month, .day, .hour, .minute, .second, .millisecond on dates
-  for (const field of ["year", "month", "day", "hour", "minute", "second", "millisecond", "days", "hours", "minutes", "seconds", "milliseconds"]) {
+  for (const field of [
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+    "second",
+    "millisecond",
+    "days",
+    "hours",
+    "minutes",
+    "seconds",
+    "milliseconds",
+  ]) {
     const regex = new RegExp(`\\.${field}\\b(?!\\s*\\()`, "g");
     result = result.replace(regex, `|_${field}`);
   }
@@ -63,8 +109,10 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
   const jexl = new Jexl.Jexl();
 
   // === Global functions ===
-  jexl.addFunction("_if", (cond: unknown, trueVal: unknown, falseVal?: unknown) =>
-    cond ? trueVal : (falseVal ?? null)
+  jexl.addFunction(
+    "_if",
+    (cond: unknown, trueVal: unknown, falseVal?: unknown) =>
+      cond ? trueVal : (falseVal ?? null),
   );
   jexl.addFunction("now", () => Date.now());
   jexl.addFunction("today", () => {
@@ -80,7 +128,7 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
     if (typeof v === "boolean") return v ? 1 : 0;
     return Number(v);
   });
-  jexl.addFunction("list", (v: unknown) => Array.isArray(v) ? v : [v]);
+  jexl.addFunction("list", (v: unknown) => (Array.isArray(v) ? v : [v]));
   jexl.addFunction("link", (path: string, display?: string) => display || path);
   jexl.addFunction("icon", (name: string) => `[${name}]`);
 
@@ -93,7 +141,7 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
     return Math.round(v * f) / f;
   });
   jexl.addTransform("toFixed", (v: number, precision: number) =>
-    Number(v).toFixed(precision)
+    Number(v).toFixed(precision),
   );
 
   // === String transforms ===
@@ -111,15 +159,19 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
     const s = String(v);
     return subs.some((sub) => s.includes(String(sub)));
   });
-  jexl.addTransform("startsWith", (v: string, q: string) => String(v).startsWith(q));
-  jexl.addTransform("endsWith", (v: string, q: string) => String(v).endsWith(q));
+  jexl.addTransform("startsWith", (v: string, q: string) =>
+    String(v).startsWith(q),
+  );
+  jexl.addTransform("endsWith", (v: string, q: string) =>
+    String(v).endsWith(q),
+  );
   jexl.addTransform("lower", (v: string) => String(v).toLowerCase());
   jexl.addTransform("title", (v: string) =>
-    String(v).replace(/\b\w/g, (c) => c.toUpperCase())
+    String(v).replace(/\b\w/g, (c) => c.toUpperCase()),
   );
   jexl.addTransform("trim", (v: string) => String(v).trim());
   jexl.addTransform("replace", (v: string, pat: string, rep: string) =>
-    String(v).replace(pat, rep)
+    String(v).replace(pat, rep),
   );
   jexl.addTransform("repeat", (v: string, n: number) => String(v).repeat(n));
   jexl.addTransform("reverse", (v: unknown) => {
@@ -161,10 +213,22 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
     const abs = Math.abs(diff);
     const ago = diff > 0;
     if (abs < 60000) return "just now";
-    if (abs < 3600000) { const m = Math.floor(abs / 60000); return ago ? `${m} minute${m > 1 ? "s" : ""} ago` : `in ${m} minute${m > 1 ? "s" : ""}`; }
-    if (abs < 86400000) { const h = Math.floor(abs / 3600000); return ago ? `${h} hour${h > 1 ? "s" : ""} ago` : `in ${h} hour${h > 1 ? "s" : ""}`; }
+    if (abs < 3600000) {
+      const m = Math.floor(abs / 60000);
+      return ago
+        ? `${m} minute${m > 1 ? "s" : ""} ago`
+        : `in ${m} minute${m > 1 ? "s" : ""}`;
+    }
+    if (abs < 86400000) {
+      const h = Math.floor(abs / 3600000);
+      return ago
+        ? `${h} hour${h > 1 ? "s" : ""} ago`
+        : `in ${h} hour${h > 1 ? "s" : ""}`;
+    }
     const d = Math.floor(abs / 86400000);
-    return ago ? `${d} day${d > 1 ? "s" : ""} ago` : `in ${d} day${d > 1 ? "s" : ""}`;
+    return ago
+      ? `${d} day${d > 1 ? "s" : ""} ago`
+      : `in ${d} day${d > 1 ? "s" : ""}`;
   });
 
   // === Date field transforms (act as property access) ===
@@ -174,7 +238,9 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
   jexl.addTransform("_hour", (v: number) => new Date(v).getHours());
   jexl.addTransform("_minute", (v: number) => new Date(v).getMinutes());
   jexl.addTransform("_second", (v: number) => new Date(v).getSeconds());
-  jexl.addTransform("_millisecond", (v: number) => new Date(v).getMilliseconds());
+  jexl.addTransform("_millisecond", (v: number) =>
+    new Date(v).getMilliseconds(),
+  );
 
   // === Duration field transforms ===
   jexl.addTransform("_days", (v: number) => v / 86400000);
@@ -185,16 +251,16 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
 
   // === List transforms ===
   jexl.addTransform("join", (v: unknown[], sep: string) =>
-    Array.isArray(v) ? v.join(sep) : String(v)
+    Array.isArray(v) ? v.join(sep) : String(v),
   );
   jexl.addTransform("sort", (v: unknown[]) =>
-    Array.isArray(v) ? [...v].sort() : v
+    Array.isArray(v) ? [...v].sort() : v,
   );
   jexl.addTransform("unique", (v: unknown[]) =>
-    Array.isArray(v) ? [...new Set(v)] : v
+    Array.isArray(v) ? [...new Set(v)] : v,
   );
   jexl.addTransform("flat", (v: unknown[]) =>
-    Array.isArray(v) ? v.flat() : v
+    Array.isArray(v) ? v.flat() : v,
   );
 
   // === Any transforms ===
@@ -220,31 +286,40 @@ export function createFormulaEngine(): InstanceType<typeof Jexl.Jexl> {
 
   // === Object transforms ===
   jexl.addTransform("keys", (v: unknown) =>
-    v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v) : []
+    v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v) : [],
   );
   jexl.addTransform("values", (v: unknown) =>
-    v && typeof v === "object" && !Array.isArray(v) ? Object.values(v) : []
+    v && typeof v === "object" && !Array.isArray(v) ? Object.values(v) : [],
   );
 
   // === File-like transforms (operate on context objects) ===
-  jexl.addTransform("hasTag", (file: { tags?: string[] }, ...tags: string[]) => {
-    if (!file?.tags) return false;
-    return tags.some((t) => file.tags!.some((ft) => ft === t || ft.startsWith(`${t}/`)));
-  });
+  jexl.addTransform(
+    "hasTag",
+    (file: { tags?: string[] }, ...tags: string[]) => {
+      if (!file?.tags) return false;
+      return tags.some((t) =>
+        file.tags?.some((ft) => ft === t || ft.startsWith(`${t}/`)),
+      );
+    },
+  );
   jexl.addTransform("hasLink", (file: { links?: string[] }, target: string) => {
     if (!file?.links) return false;
     return file.links.includes(target);
   });
-  jexl.addTransform("hasProperty", (file: { properties?: Record<string, unknown> }, name: string) => {
-    if (!file?.properties) return false;
-    return name in file.properties;
-  });
+  jexl.addTransform(
+    "hasProperty",
+    (file: { properties?: Record<string, unknown> }, name: string) => {
+      if (!file?.properties) return false;
+      return name in file.properties;
+    },
+  );
   jexl.addTransform("inFolder", (file: { folder?: string }, folder: string) => {
     if (!file?.folder) return false;
     return file.folder === folder || file.folder.startsWith(`${folder}/`);
   });
-  jexl.addTransform("asLink", (file: { name?: string }, display?: string) =>
-    display || file?.name || ""
+  jexl.addTransform(
+    "asLink",
+    (file: { name?: string }, display?: string) => display || file?.name || "",
   );
 
   // === Regex ===
@@ -277,18 +352,49 @@ export function buildFormulaContext(
     const val = row[i];
 
     // File metadata columns
-    if (["path", "name", "basename", "folder", "ext", "size", "ctime", "mtime"].includes(col)) {
+    if (
+      [
+        "path",
+        "name",
+        "basename",
+        "folder",
+        "ext",
+        "size",
+        "ctime",
+        "mtime",
+      ].includes(col)
+    ) {
       file[col] = val;
     } else if (col === "tags") {
-      try { file.tags = JSON.parse(val as string); } catch { file.tags = []; }
+      try {
+        file.tags = JSON.parse(val as string);
+      } catch {
+        file.tags = [];
+      }
     } else if (col === "links") {
-      try { file.links = JSON.parse(val as string); } catch { file.links = []; }
+      try {
+        file.links = JSON.parse(val as string);
+      } catch {
+        file.links = [];
+      }
     } else if (col === "backlinks") {
-      try { file.backlinks = JSON.parse(val as string); } catch { file.backlinks = []; }
+      try {
+        file.backlinks = JSON.parse(val as string);
+      } catch {
+        file.backlinks = [];
+      }
     } else if (col === "embeds") {
-      try { file.embeds = JSON.parse(val as string); } catch { file.embeds = []; }
+      try {
+        file.embeds = JSON.parse(val as string);
+      } catch {
+        file.embeds = [];
+      }
     } else if (col === "file_properties") {
-      try { file.properties = JSON.parse(val as string); } catch { file.properties = {}; }
+      try {
+        file.properties = JSON.parse(val as string);
+      } catch {
+        file.properties = {};
+      }
     } else {
       // Frontmatter properties (already stripped of prop_ prefix by queryBase)
       // Try to parse JSON values (lists, objects)
@@ -297,7 +403,9 @@ export function buildFormulaContext(
         try {
           const p = JSON.parse(val);
           if (typeof p === "object") parsed = p;
-        } catch { /* keep as string */ }
+        } catch {
+          /* keep as string */
+        }
       }
       note[col] = parsed;
       ctx[col] = parsed; // bare property access shorthand
@@ -336,7 +444,9 @@ export async function evaluateFormulas(
     let resolved = false;
     for (const [name, expr] of Object.entries(remaining)) {
       // Check if this formula depends on unresolved formulas
-      const deps = Object.keys(remaining).filter((k) => k !== name && expr.includes(`formula.${k}`));
+      const deps = Object.keys(remaining).filter(
+        (k) => k !== name && expr.includes(`formula.${k}`),
+      );
       if (deps.length > 0) continue;
 
       const ctx = buildFormulaContext(columns, row, results, thisFile);
@@ -361,17 +471,41 @@ export async function evaluateFormulas(
 }
 
 function parseDurationMs(dur: string): number {
-  const match = dur.match(/^(\d+)\s*(y|year|years|M|month|months|d|day|days|w|week|weeks|h|hour|hours|m|minute|minutes|s|second|seconds)$/);
+  const match = dur.match(
+    /^(\d+)\s*(y|year|years|M|month|months|d|day|days|w|week|weeks|h|hour|hours|m|minute|minutes|s|second|seconds)$/,
+  );
   if (!match) return 0;
-  const n = Number.parseInt(match[1]);
+  const n = Number.parseInt(match[1], 10);
   switch (match[2]) {
-    case "y": case "year": case "years": return n * 365.25 * 24 * 60 * 60 * 1000;
-    case "M": case "month": case "months": return n * 30.44 * 24 * 60 * 60 * 1000;
-    case "w": case "week": case "weeks": return n * 7 * 24 * 60 * 60 * 1000;
-    case "d": case "day": case "days": return n * 24 * 60 * 60 * 1000;
-    case "h": case "hour": case "hours": return n * 60 * 60 * 1000;
-    case "m": case "minute": case "minutes": return n * 60 * 1000;
-    case "s": case "second": case "seconds": return n * 1000;
-    default: return 0;
+    case "y":
+    case "year":
+    case "years":
+      return n * 365.25 * 24 * 60 * 60 * 1000;
+    case "M":
+    case "month":
+    case "months":
+      return n * 30.44 * 24 * 60 * 60 * 1000;
+    case "w":
+    case "week":
+    case "weeks":
+      return n * 7 * 24 * 60 * 60 * 1000;
+    case "d":
+    case "day":
+    case "days":
+      return n * 24 * 60 * 60 * 1000;
+    case "h":
+    case "hour":
+    case "hours":
+      return n * 60 * 60 * 1000;
+    case "m":
+    case "minute":
+    case "minutes":
+      return n * 60 * 1000;
+    case "s":
+    case "second":
+    case "seconds":
+      return n * 1000;
+    default:
+      return 0;
   }
 }

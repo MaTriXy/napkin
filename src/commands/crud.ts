@@ -1,12 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault, getVaultConfig } from "../utils/vault.js";
-import { resolveFile, readFile as readFileUtil } from "../utils/files.js";
-import { parseFrontmatter } from "../utils/frontmatter.js";
-import { type OutputOptions, output, error, success } from "../utils/output.js";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import { readFile as readFileUtil, resolveFile } from "../utils/files.js";
+import { parseFrontmatter } from "../utils/frontmatter.js";
+import { error, type OutputOptions, output, success } from "../utils/output.js";
+import { findVault, getVaultConfig } from "../utils/vault.js";
 
-export async function read(fileRef: string | undefined, opts: OutputOptions & { vault?: string }) {
+export async function read(
+  fileRef: string | undefined,
+  opts: OutputOptions & { vault?: string },
+) {
   const v = findVault(opts.vault);
   if (!fileRef) {
     error("No file specified. Usage: obsidian-cli read <file>");
@@ -20,15 +23,17 @@ export async function read(fileRef: string | undefined, opts: OutputOptions & { 
   });
 }
 
-export async function create(opts: OutputOptions & {
-  vault?: string;
-  name?: string;
-  path?: string;
-  content?: string;
-  template?: string;
-  overwrite?: boolean;
-  open?: boolean;
-}) {
+export async function create(
+  opts: OutputOptions & {
+    vault?: string;
+    name?: string;
+    path?: string;
+    content?: string;
+    template?: string;
+    overwrite?: boolean;
+    open?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
 
   let targetPath: string;
@@ -49,9 +54,11 @@ export async function create(opts: OutputOptions & {
   let content = opts.content || "";
 
   if (opts.template) {
-    const templateConfig = getVaultConfig(v.path, "core-plugins.json");
+    const _templateConfig = getVaultConfig(v.path, "core-plugins.json");
     // Try to find template in Templates/ folder
-    const templateRef = resolveFile(v.path, opts.template) || resolveFile(v.path, `Templates/${opts.template}`);
+    const templateRef =
+      resolveFile(v.path, opts.template) ||
+      resolveFile(v.path, `Templates/${opts.template}`);
     if (templateRef) {
       content = fs.readFileSync(path.join(v.path, templateRef), "utf-8");
     } else {
@@ -63,19 +70,20 @@ export async function create(opts: OutputOptions & {
   fs.mkdirSync(path.dirname(fullPath), { recursive: true });
   fs.writeFileSync(fullPath, content);
 
-
   output(opts, {
     json: () => ({ path: targetPath, created: true }),
     human: () => success(`Created ${targetPath}`),
   });
 }
 
-export async function append(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  content?: string;
-  inline?: boolean;
-}) {
+export async function append(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    content?: string;
+    inline?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -103,12 +111,14 @@ export async function append(opts: OutputOptions & {
   });
 }
 
-export async function prepend(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  content?: string;
-  inline?: boolean;
-}) {
+export async function prepend(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    content?: string;
+    inline?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -144,7 +154,9 @@ export async function prepend(opts: OutputOptions & {
   });
 }
 
-export async function move(opts: OutputOptions & { vault?: string; file?: string; to?: string }) {
+export async function move(
+  opts: OutputOptions & { vault?: string; file?: string; to?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -178,7 +190,9 @@ export async function move(opts: OutputOptions & { vault?: string; file?: string
   });
 }
 
-export async function rename(opts: OutputOptions & { vault?: string; file?: string; name?: string }) {
+export async function rename(
+  opts: OutputOptions & { vault?: string; file?: string; name?: string },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -207,7 +221,9 @@ export async function rename(opts: OutputOptions & { vault?: string; file?: stri
   });
 }
 
-export async function del(opts: OutputOptions & { vault?: string; file?: string; permanent?: boolean }) {
+export async function del(
+  opts: OutputOptions & { vault?: string; file?: string; permanent?: boolean },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -232,7 +248,14 @@ export async function del(opts: OutputOptions & { vault?: string; file?: string;
   }
 
   output(opts, {
-    json: () => ({ path: resolved, deleted: true, permanent: !!opts.permanent }),
-    human: () => success(`Deleted ${resolved}${opts.permanent ? " (permanent)" : " (moved to .trash)"}`),
+    json: () => ({
+      path: resolved,
+      deleted: true,
+      permanent: !!opts.permanent,
+    }),
+    human: () =>
+      success(
+        `Deleted ${resolved}${opts.permanent ? " (permanent)" : " (moved to .trash)"}`,
+      ),
   });
 }

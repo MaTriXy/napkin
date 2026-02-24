@@ -1,20 +1,26 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
-import { getDailyPath, dailyPath, dailyRead, dailyAppend, dailyPrepend } from "./daily.js";
+import {
+  dailyAppend,
+  dailyPath,
+  dailyPrepend,
+  dailyRead,
+  getDailyPath,
+} from "./daily.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 function todayStr(): string {
@@ -46,14 +52,18 @@ describe("getDailyPath", () => {
 
 describe("dailyPath", () => {
   test("outputs path as json", async () => {
-    const data = await captureJson(() => dailyPath({ json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      dailyPath({ json: true, vault: v.path }),
+    );
     expect(data.path).toBe(`Inbox/Daily/${todayStr()}.md`);
   });
 });
 
 describe("dailyRead", () => {
   test("reads daily note content", async () => {
-    const data = await captureJson(() => dailyRead({ json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      dailyRead({ json: true, vault: v.path }),
+    );
     expect(data.content).toContain("Task 1");
   });
 });
@@ -63,7 +73,10 @@ describe("dailyAppend", () => {
     await captureJson(() =>
       dailyAppend({ json: true, vault: v.path, content: "- [ ] New task" }),
     );
-    const content = fs.readFileSync(path.join(v.path, `Inbox/Daily/${todayStr()}.md`), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.path, `Inbox/Daily/${todayStr()}.md`),
+      "utf-8",
+    );
     expect(content).toContain("New task");
   });
 
@@ -73,7 +86,10 @@ describe("dailyAppend", () => {
     await captureJson(() =>
       dailyAppend({ json: true, vault: v.path, content: "First entry" }),
     );
-    const content = fs.readFileSync(path.join(v.path, `Inbox/Daily/${todayStr()}.md`), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.path, `Inbox/Daily/${todayStr()}.md`),
+      "utf-8",
+    );
     expect(content).toContain("First entry");
   });
 });
@@ -83,7 +99,10 @@ describe("dailyPrepend", () => {
     await captureJson(() =>
       dailyPrepend({ json: true, vault: v.path, content: "Top line" }),
     );
-    const content = fs.readFileSync(path.join(v.path, `Inbox/Daily/${todayStr()}.md`), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.path, `Inbox/Daily/${todayStr()}.md`),
+      "utf-8",
+    );
     const topIdx = content.indexOf("Top line");
     const taskIdx = content.indexOf("Task 1");
     expect(topIdx).toBeLessThan(taskIdx);

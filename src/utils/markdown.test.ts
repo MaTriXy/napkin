@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { extractHeadings, extractTasks, extractTags, extractLinks } from "./markdown.js";
+import {
+  extractHeadings,
+  extractLinks,
+  extractTags,
+  extractTasks,
+} from "./markdown.js";
 
 describe("extractHeadings", () => {
   test("extracts headings with levels", () => {
@@ -19,7 +24,8 @@ describe("extractHeadings", () => {
 
 describe("extractTasks", () => {
   test("extracts tasks with status", () => {
-    const content = "# Tasks\n- [ ] Buy groceries\n- [x] Ship feature\n- [-] Cancelled";
+    const content =
+      "# Tasks\n- [ ] Buy groceries\n- [x] Ship feature\n- [-] Cancelled";
     const tasks = extractTasks(content);
     expect(tasks).toEqual([
       { line: 2, status: " ", text: "Buy groceries", done: false },

@@ -1,17 +1,19 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { resolveFile } from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
-import { type OutputOptions, output, error, dim } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import { dim, error, type OutputOptions, output } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
-export async function wordcount(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  words?: boolean;
-  characters?: boolean;
-}) {
+export async function wordcount(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    words?: boolean;
+    characters?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");

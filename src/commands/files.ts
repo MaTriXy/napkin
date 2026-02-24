@@ -1,12 +1,26 @@
 import { exec } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
-import { listFiles, listFolders, resolveFile, getFileInfo } from "../utils/files.js";
-import { type OutputOptions, output, bold, dim, error } from "../utils/output.js";
 import { EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import {
+  getFileInfo,
+  listFiles,
+  listFolders,
+  resolveFile,
+} from "../utils/files.js";
+import {
+  bold,
+  dim,
+  error,
+  type OutputOptions,
+  output,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
-export async function file(fileRef: string | undefined, opts: OutputOptions & { vault?: string }) {
+export async function file(
+  fileRef: string | undefined,
+  opts: OutputOptions & { vault?: string },
+) {
   const v = findVault(opts.vault);
   if (!fileRef) {
     error("No file specified. Usage: obsidian-cli file <name>");
@@ -32,7 +46,14 @@ export async function file(fileRef: string | undefined, opts: OutputOptions & { 
   });
 }
 
-export async function files(opts: OutputOptions & { vault?: string; folder?: string; ext?: string; total?: boolean }) {
+export async function files(
+  opts: OutputOptions & {
+    vault?: string;
+    folder?: string;
+    ext?: string;
+    total?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   const result = listFiles(v.path, { folder: opts.folder, ext: opts.ext });
 
@@ -48,7 +69,9 @@ export async function files(opts: OutputOptions & { vault?: string; folder?: str
   });
 }
 
-export async function folders(opts: OutputOptions & { vault?: string; folder?: string; total?: boolean }) {
+export async function folders(
+  opts: OutputOptions & { vault?: string; folder?: string; total?: boolean },
+) {
   const v = findVault(opts.vault);
   const result = listFolders(v.path, opts.folder);
 
@@ -64,7 +87,10 @@ export async function folders(opts: OutputOptions & { vault?: string; folder?: s
   });
 }
 
-export async function folder(folderPath: string | undefined, opts: OutputOptions & { vault?: string; info?: string }) {
+export async function folder(
+  folderPath: string | undefined,
+  opts: OutputOptions & { vault?: string; info?: string },
+) {
   const v = findVault(opts.vault);
   if (!folderPath) {
     error("No folder specified. Usage: obsidian-cli folder <path>");
@@ -87,16 +113,26 @@ export async function folder(folderPath: string | undefined, opts: OutputOptions
   }
 
   if (opts.info) {
-    const val = opts.info === "files" ? fileCount : opts.info === "folders" ? folderCount : size;
+    const val =
+      opts.info === "files"
+        ? fileCount
+        : opts.info === "folders"
+          ? folderCount
+          : size;
     output(opts, {
-      json: () => ({ [opts.info!]: val }),
+      json: () => ({ [opts.info as string]: val }),
       human: () => console.log(val),
     });
     return;
   }
 
   output(opts, {
-    json: () => ({ path: folderPath, files: fileCount, folders: folderCount, size }),
+    json: () => ({
+      path: folderPath,
+      files: fileCount,
+      folders: folderCount,
+      size,
+    }),
     human: () => {
       console.log(`${dim("path")}      ${folderPath}`);
       console.log(`${dim("files")}     ${fileCount}`);
@@ -106,7 +142,10 @@ export async function folder(folderPath: string | undefined, opts: OutputOptions
   });
 }
 
-export async function open(fileRef: string | undefined, opts: OutputOptions & { vault?: string; newtab?: boolean }) {
+export async function open(
+  fileRef: string | undefined,
+  opts: OutputOptions & { vault?: string; newtab?: boolean },
+) {
   const v = findVault(opts.vault);
   const vaultName = encodeURIComponent(v.name);
 

@@ -1,20 +1,20 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
-import { tasks, task } from "./tasks.js";
+import { task, tasks } from "./tasks.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 function todayStr(): string {
@@ -24,9 +24,11 @@ function todayStr(): string {
 
 beforeEach(() => {
   v = createTempVault({
-    "note.md": "# Note\n- [ ] Buy groceries\n- [x] Ship feature\n- [-] Cancelled",
+    "note.md":
+      "# Note\n- [ ] Buy groceries\n- [x] Ship feature\n- [-] Cancelled",
     "other.md": "# Other\n- [ ] Other task",
-    [`Inbox/Daily/${todayStr()}.md`]: "# Today\n- [ ] Daily task\n- [x] Done daily",
+    [`Inbox/Daily/${todayStr()}.md`]:
+      "# Today\n- [ ] Daily task\n- [x] Done daily",
   });
 });
 
@@ -41,34 +43,46 @@ describe("tasks", () => {
   });
 
   test("filters todo only", async () => {
-    const data = await captureJson(() => tasks({ json: true, vault: v.path, todo: true }));
+    const data = await captureJson(() =>
+      tasks({ json: true, vault: v.path, todo: true }),
+    );
     const t = data.tasks as { done: boolean }[];
     expect(t.every((x) => !x.done)).toBe(true);
   });
 
   test("filters done only", async () => {
-    const data = await captureJson(() => tasks({ json: true, vault: v.path, done: true }));
+    const data = await captureJson(() =>
+      tasks({ json: true, vault: v.path, done: true }),
+    );
     const t = data.tasks as { done: boolean }[];
     expect(t.every((x) => x.done)).toBe(true);
   });
 
   test("filters by file", async () => {
-    const data = await captureJson(() => tasks({ json: true, vault: v.path, file: "note" }));
+    const data = await captureJson(() =>
+      tasks({ json: true, vault: v.path, file: "note" }),
+    );
     expect((data.tasks as unknown[]).length).toBe(3);
   });
 
   test("filters daily tasks", async () => {
-    const data = await captureJson(() => tasks({ json: true, vault: v.path, daily: true }));
+    const data = await captureJson(() =>
+      tasks({ json: true, vault: v.path, daily: true }),
+    );
     expect((data.tasks as unknown[]).length).toBe(2);
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => tasks({ json: true, vault: v.path, total: true }));
+    const data = await captureJson(() =>
+      tasks({ json: true, vault: v.path, total: true }),
+    );
     expect(data.total).toBe(6);
   });
 
   test("filters by status char", async () => {
-    const data = await captureJson(() => tasks({ json: true, vault: v.path, status: "-" }));
+    const data = await captureJson(() =>
+      tasks({ json: true, vault: v.path, status: "-" }),
+    );
     const t = data.tasks as { status: string }[];
     expect(t.length).toBe(1);
     expect(t[0].status).toBe("-");
@@ -86,7 +100,13 @@ describe("task", () => {
 
   test("toggles task", async () => {
     await captureJson(() =>
-      task({ json: true, vault: v.path, file: "note", line: "2", toggle: true }),
+      task({
+        json: true,
+        vault: v.path,
+        file: "note",
+        line: "2",
+        toggle: true,
+      }),
     );
     const content = fs.readFileSync(path.join(v.path, "note.md"), "utf-8");
     expect(content).toContain("[x] Buy groceries");

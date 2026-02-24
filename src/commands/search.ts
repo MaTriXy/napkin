@@ -1,10 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import MiniSearch from "minisearch";
-import { findVault } from "../utils/vault.js";
-import { listFiles } from "../utils/files.js";
-import { type OutputOptions, output, error } from "../utils/output.js";
 import { EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import { listFiles } from "../utils/files.js";
+import { error, type OutputOptions, output } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 interface SearchOpts extends OutputOptions {
   vault?: string;
@@ -47,7 +47,7 @@ export async function search(opts: SearchOpts) {
 
   const { index } = buildIndex(v.path, opts.path);
   const results = index.search(opts.query);
-  const limit = opts.limit ? Number.parseInt(opts.limit) : undefined;
+  const limit = opts.limit ? Number.parseInt(opts.limit, 10) : undefined;
   const matches = limit ? results.slice(0, limit) : results;
   const files = matches.map((r) => r.file as string);
 
@@ -72,7 +72,7 @@ export async function searchContext(opts: SearchOpts) {
 
   const { index, docs } = buildIndex(v.path, opts.path);
   const results = index.search(opts.query);
-  const limit = opts.limit ? Number.parseInt(opts.limit) : undefined;
+  const limit = opts.limit ? Number.parseInt(opts.limit, 10) : undefined;
   const matches = limit ? results.slice(0, limit) : results;
 
   const q = opts.query.toLowerCase();
@@ -89,7 +89,8 @@ export async function searchContext(opts: SearchOpts) {
   }
 
   output(opts, {
-    json: () => (opts.total ? { total: contexts.length } : { results: contexts }),
+    json: () =>
+      opts.total ? { total: contexts.length } : { results: contexts },
     human: () => {
       if (opts.total) {
         console.log(contexts.length);

@@ -18,9 +18,18 @@ export interface ListFilesOptions {
 /**
  * Recursively list files in a vault, skipping .obsidian, .git, .trash, node_modules.
  */
-export function listFiles(vaultPath: string, opts?: ListFilesOptions): string[] {
+export function listFiles(
+  vaultPath: string,
+  opts?: ListFilesOptions,
+): string[] {
   const results: string[] = [];
-  const skipDirs = new Set([".obsidian", ".git", ".trash", ".nanny", "node_modules"]);
+  const skipDirs = new Set([
+    ".obsidian",
+    ".git",
+    ".trash",
+    ".nanny",
+    "node_modules",
+  ]);
 
   const baseDir = opts?.folder ? path.join(vaultPath, opts.folder) : vaultPath;
   if (!fs.existsSync(baseDir)) return results;
@@ -52,9 +61,18 @@ export function listFiles(vaultPath: string, opts?: ListFilesOptions): string[] 
 /**
  * List folders in a vault, skipping hidden/system dirs.
  */
-export function listFolders(vaultPath: string, parentFolder?: string): string[] {
+export function listFolders(
+  vaultPath: string,
+  parentFolder?: string,
+): string[] {
   const results: string[] = [];
-  const skipDirs = new Set([".obsidian", ".git", ".trash", ".nanny", "node_modules"]);
+  const skipDirs = new Set([
+    ".obsidian",
+    ".git",
+    ".trash",
+    ".nanny",
+    "node_modules",
+  ]);
 
   const baseDir = parentFolder ? path.join(vaultPath, parentFolder) : vaultPath;
   if (!fs.existsSync(baseDir)) return results;
@@ -103,7 +121,10 @@ export function resolveFile(vaultPath: string, fileRef: string): string | null {
 /**
  * Read a file's contents, resolving by name or path.
  */
-export function readFile(vaultPath: string, fileRef: string): { path: string; content: string } {
+export function readFile(
+  vaultPath: string,
+  fileRef: string,
+): { path: string; content: string } {
   const resolved = resolveFile(vaultPath, fileRef);
   if (!resolved) {
     throw new Error(`File not found: ${fileRef}`);

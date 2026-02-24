@@ -1,10 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
 import { listFiles, resolveFile } from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
-import { type OutputOptions, output, error, dim } from "../utils/output.js";
-import { EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import { dim, type OutputOptions, output } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 interface AliasEntry {
   alias: string;
@@ -33,12 +32,14 @@ function collectAliases(vaultPath: string, fileFilter?: string): AliasEntry[] {
   return results;
 }
 
-export async function aliases(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  total?: boolean;
-  verbose?: boolean;
-}) {
+export async function aliases(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    total?: boolean;
+    verbose?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   const result = collectAliases(v.path, opts.file);
 

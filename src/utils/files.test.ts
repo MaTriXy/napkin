@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { listFiles, listFolders, resolveFile, readFile, getFileInfo } from "./files.js";
+import {
+  getFileInfo,
+  listFiles,
+  listFolders,
+  readFile,
+  resolveFile,
+} from "./files.js";
 import { createTempVault } from "./test-helpers.js";
 
 let vault: { path: string; cleanup: () => void };
@@ -7,10 +13,12 @@ let vault: { path: string; cleanup: () => void };
 beforeEach(() => {
   vault = createTempVault({
     "README.md": "# My Vault\nWelcome to the vault.",
-    "Projects/Active Projects.md": "# Active Projects\n- Project A\n- Project B",
+    "Projects/Active Projects.md":
+      "# Active Projects\n- Project A\n- Project B",
     "Projects/K Logic/Meeting.md": "# Meeting Notes\nSome notes here.",
     "Resources/Runbooks/Deploy.md": "# Deploy\nStep 1\nStep 2",
-    "Inbox/Daily/2026-02-24.md": "# Daily\n- [ ] Buy groceries\n- [x] Ship feature",
+    "Inbox/Daily/2026-02-24.md":
+      "# Daily\n- [ ] Buy groceries\n- [x] Ship feature",
     "Templates/Daily Note.md": "# {{date}}\n\n## Tasks\n- [ ] ",
     "Templates/Meeting Note.md": "# Meeting: {{title}}\n\n## Notes\n",
     "image.png": "fake-png-data",

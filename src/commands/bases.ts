@@ -1,10 +1,17 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
-import { listFiles, resolveFile } from "../utils/files.js";
 import { buildDatabase, parseBaseFile, queryBase } from "../utils/bases.js";
-import { type OutputOptions, output, error, success, dim, bold } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import { EXIT_USER_ERROR } from "../utils/exit-codes.js";
+import { listFiles } from "../utils/files.js";
+import {
+  bold,
+  dim,
+  error,
+  type OutputOptions,
+  output,
+  success,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 export async function bases(opts: OutputOptions & { vault?: string }) {
   const v = findVault(opts.vault);
@@ -22,7 +29,9 @@ export async function bases(opts: OutputOptions & { vault?: string }) {
   });
 }
 
-export async function baseViews(opts: OutputOptions & { vault?: string; file?: string; path?: string }) {
+export async function baseViews(
+  opts: OutputOptions & { vault?: string; file?: string; path?: string },
+) {
   const v = findVault(opts.vault);
   const baseFile = resolveBaseFile(v.path, opts);
   if (!baseFile) {
@@ -47,13 +56,15 @@ export async function baseViews(opts: OutputOptions & { vault?: string; file?: s
   });
 }
 
-export async function baseQuery(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  path?: string;
-  view?: string;
-  format?: string;
-}) {
+export async function baseQuery(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    path?: string;
+    view?: string;
+    format?: string;
+  },
+) {
   const v = findVault(opts.vault);
   const baseFile = resolveBaseFile(v.path, opts);
   if (!baseFile) {
@@ -67,18 +78,20 @@ export async function baseQuery(opts: OutputOptions & {
   const db = await buildDatabase(v.path);
   try {
     // Derive thisFile from the base file path
-    const thisFile = baseFile ? {
-      name: path.basename(baseFile),
-      path: baseFile,
-      folder: path.dirname(baseFile),
-    } : undefined;
+    const thisFile = baseFile
+      ? {
+          name: path.basename(baseFile),
+          path: baseFile,
+          folder: path.dirname(baseFile),
+        }
+      : undefined;
 
     const result = await queryBase(db, config, opts.view, thisFile);
     const fmt = opts.format || "json";
 
     // Apply displayNames to columns for output
-    const displayCols = result.columns.map((c) =>
-      result.displayNames?.[c] || c
+    const displayCols = result.columns.map(
+      (c) => result.displayNames?.[c] || c,
     );
 
     output(opts, {
@@ -96,7 +109,10 @@ export async function baseQuery(opts: OutputOptions & {
           return obj;
         });
         const out: Record<string, unknown> = { columns: result.columns, rows };
-        if (result.displayNames && Object.keys(result.displayNames).length > 0) {
+        if (
+          result.displayNames &&
+          Object.keys(result.displayNames).length > 0
+        ) {
           out.displayNames = result.displayNames;
         }
         if (result.groups) {
@@ -130,7 +146,9 @@ export async function baseQuery(opts: OutputOptions & {
           const sep = fmt === "csv" ? "," : "\t";
           console.log(displayCols.join(sep));
           for (const row of result.rows) {
-            console.log(row.map((v) => (v === null ? "" : String(v))).join(sep));
+            console.log(
+              row.map((v) => (v === null ? "" : String(v))).join(sep),
+            );
           }
           return;
         }
@@ -139,7 +157,9 @@ export async function baseQuery(opts: OutputOptions & {
           console.log(`| ${displayCols.join(" | ")} |`);
           console.log(`| ${displayCols.map(() => "---").join(" | ")} |`);
           for (const row of result.rows) {
-            console.log(`| ${row.map((v) => (v === null ? "" : String(v))).join(" | ")} |`);
+            console.log(
+              `| ${row.map((v) => (v === null ? "" : String(v))).join(" | ")} |`,
+            );
           }
           return;
         }
@@ -159,13 +179,15 @@ export async function baseQuery(opts: OutputOptions & {
   }
 }
 
-export async function baseCreate(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  path?: string;
-  name?: string;
-  content?: string;
-}) {
+export async function baseCreate(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    path?: string;
+    name?: string;
+    content?: string;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.name) {
     error("No name specified. Use --name <name>");
@@ -174,7 +196,9 @@ export async function baseCreate(opts: OutputOptions & {
 
   // Create a new note (item in the base)
   const targetPath = opts.path
-    ? (opts.path.endsWith(".md") ? opts.path : `${opts.path}/${opts.name}.md`)
+    ? opts.path.endsWith(".md")
+      ? opts.path
+      : `${opts.path}/${opts.name}.md`
     : `${opts.name}.md`;
 
   const fullPath = path.join(v.path, targetPath);
@@ -187,7 +211,10 @@ export async function baseCreate(opts: OutputOptions & {
   });
 }
 
-function resolveBaseFile(vaultPath: string, opts: { file?: string; path?: string }): string | null {
+function resolveBaseFile(
+  vaultPath: string,
+  opts: { file?: string; path?: string },
+): string | null {
   if (opts.path) {
     const p = opts.path.endsWith(".base") ? opts.path : `${opts.path}.base`;
     if (fs.existsSync(path.join(vaultPath, p))) return p;
@@ -202,7 +229,9 @@ function resolveBaseFile(vaultPath: string, opts: { file?: string; path?: string
       if (basename === target) return f;
     }
     // Try with .base extension
-    const withExt = opts.file.endsWith(".base") ? opts.file : `${opts.file}.base`;
+    const withExt = opts.file.endsWith(".base")
+      ? opts.file
+      : `${opts.file}.base`;
     if (fs.existsSync(path.join(vaultPath, withExt))) return withExt;
     return null;
   }

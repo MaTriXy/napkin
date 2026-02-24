@@ -4,15 +4,15 @@ import { file, files, folders } from "./files.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 beforeEach(() => {
@@ -30,7 +30,9 @@ afterEach(() => {
 
 describe("file command", () => {
   test("shows file info as json", async () => {
-    const data = await captureJson(() => file("README", { json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      file("README", { json: true, vault: v.path }),
+    );
     expect(data.name).toBe("README");
     expect(data.extension).toBe("md");
     expect(data.size).toBeGreaterThan(0);
@@ -44,25 +46,33 @@ describe("files command", () => {
   });
 
   test("filters by extension", async () => {
-    const data = await captureJson(() => files({ json: true, vault: v.path, ext: "md" }));
+    const data = await captureJson(() =>
+      files({ json: true, vault: v.path, ext: "md" }),
+    );
     expect((data.files as string[]).length).toBe(3);
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => files({ json: true, vault: v.path, total: true }));
+    const data = await captureJson(() =>
+      files({ json: true, vault: v.path, total: true }),
+    );
     expect(data.total).toBe(4);
   });
 });
 
 describe("folders command", () => {
   test("lists folders", async () => {
-    const data = await captureJson(() => folders({ json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      folders({ json: true, vault: v.path }),
+    );
     expect(data.folders).toContain("Projects");
     expect(data.folders).toContain("Resources");
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => folders({ json: true, vault: v.path, total: true }));
+    const data = await captureJson(() =>
+      folders({ json: true, vault: v.path, total: true }),
+    );
     expect(data.total).toBe(2);
   });
 });

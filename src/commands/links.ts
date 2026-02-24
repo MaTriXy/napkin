@@ -1,10 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { listFiles, resolveFile } from "../utils/files.js";
 import { extractLinks } from "../utils/markdown.js";
-import { type OutputOptions, output, error, dim } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
+import { dim, error, type OutputOptions, output } from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 interface VaultLinks {
   /** file -> outgoing link targets */
@@ -33,10 +33,10 @@ function buildLinkIndex(vaultPath: string): VaultLinks {
       const resolved = resolveFile(vaultPath, target);
       if (resolved) {
         if (!incoming.has(resolved)) incoming.set(resolved, []);
-        incoming.get(resolved)!.push(file);
+        incoming.get(resolved)?.push(file);
       } else {
         if (!unresolved.has(target)) unresolved.set(target, []);
-        unresolved.get(target)!.push(file);
+        unresolved.get(target)?.push(file);
       }
     }
   }
@@ -44,12 +44,14 @@ function buildLinkIndex(vaultPath: string): VaultLinks {
   return { outgoing, incoming, unresolved };
 }
 
-export async function backlinks(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  counts?: boolean;
-  total?: boolean;
-}) {
+export async function backlinks(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    counts?: boolean;
+    total?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -74,7 +76,9 @@ export async function backlinks(opts: OutputOptions & {
   });
 }
 
-export async function links(opts: OutputOptions & { vault?: string; file?: string; total?: boolean }) {
+export async function links(
+  opts: OutputOptions & { vault?: string; file?: string; total?: boolean },
+) {
   const v = findVault(opts.vault);
   if (!opts.file) {
     error("No file specified. Use --file <name>");
@@ -99,21 +103,30 @@ export async function links(opts: OutputOptions & { vault?: string; file?: strin
   });
 }
 
-export async function unresolvedLinks(opts: OutputOptions & {
-  vault?: string;
-  total?: boolean;
-  counts?: boolean;
-  verbose?: boolean;
-}) {
+export async function unresolvedLinks(
+  opts: OutputOptions & {
+    vault?: string;
+    total?: boolean;
+    counts?: boolean;
+    verbose?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
   const { unresolved } = buildLinkIndex(v.path);
 
-  const entries = [...unresolved.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const entries = [...unresolved.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  );
 
   output(opts, {
     json: () => {
       if (opts.total) return { total: entries.length };
-      if (opts.counts || opts.verbose) return { unresolved: Object.fromEntries(entries.map(([k, v]) => [k, opts.verbose ? v : v.length])) };
+      if (opts.counts || opts.verbose)
+        return {
+          unresolved: Object.fromEntries(
+            entries.map(([k, v]) => [k, opts.verbose ? v : v.length]),
+          ),
+        };
       return { unresolved: entries.map(([k]) => k) };
     },
     human: () => {
@@ -131,7 +144,9 @@ export async function unresolvedLinks(opts: OutputOptions & {
   });
 }
 
-export async function orphans(opts: OutputOptions & { vault?: string; total?: boolean }) {
+export async function orphans(
+  opts: OutputOptions & { vault?: string; total?: boolean },
+) {
   const v = findVault(opts.vault);
   const { incoming } = buildLinkIndex(v.path);
 
@@ -149,7 +164,9 @@ export async function orphans(opts: OutputOptions & { vault?: string; total?: bo
   });
 }
 
-export async function deadends(opts: OutputOptions & { vault?: string; total?: boolean }) {
+export async function deadends(
+  opts: OutputOptions & { vault?: string; total?: boolean },
+) {
   const v = findVault(opts.vault);
   const { outgoing } = buildLinkIndex(v.path);
 

@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
-import { templates, templateRead, templateInsert } from "./templates.js";
+import { templateInsert, templateRead, templates } from "./templates.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 beforeEach(() => {
@@ -28,27 +28,39 @@ afterEach(() => {
 
 describe("templates", () => {
   test("lists templates", async () => {
-    const data = await captureJson(() => templates({ json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      templates({ json: true, vault: v.path }),
+    );
     const t = data.templates as string[];
     expect(t).toContain("Daily Note");
     expect(t).toContain("Meeting Note");
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => templates({ json: true, vault: v.path, total: true }));
+    const data = await captureJson(() =>
+      templates({ json: true, vault: v.path, total: true }),
+    );
     expect(data.total).toBe(2);
   });
 });
 
 describe("templateRead", () => {
   test("reads raw template", async () => {
-    const data = await captureJson(() => templateRead({ json: true, vault: v.path, name: "Daily Note" }));
+    const data = await captureJson(() =>
+      templateRead({ json: true, vault: v.path, name: "Daily Note" }),
+    );
     expect(data.content).toContain("{{date}}");
   });
 
   test("resolves template variables", async () => {
     const data = await captureJson(() =>
-      templateRead({ json: true, vault: v.path, name: "Meeting Note", resolve: true, title: "Standup" }),
+      templateRead({
+        json: true,
+        vault: v.path,
+        name: "Meeting Note",
+        resolve: true,
+        title: "Standup",
+      }),
     );
     const content = data.content as string;
     expect(content).not.toContain("{{title}}");
@@ -65,7 +77,12 @@ describe("templateInsert", () => {
     fs.writeFileSync(path.join(v.path, "target.md"), "# Existing\n\n");
 
     const data = await captureJson(() =>
-      templateInsert({ json: true, vault: v.path, name: "Daily Note", file: "target" }),
+      templateInsert({
+        json: true,
+        vault: v.path,
+        name: "Daily Note",
+        file: "target",
+      }),
     );
     expect(data.inserted).toBe(true);
 

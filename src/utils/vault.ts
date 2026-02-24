@@ -36,7 +36,10 @@ export function findVault(startDir?: string): VaultInfo {
  * Read a JSON config file from .obsidian/ directory.
  * Returns parsed JSON or null if file doesn't exist.
  */
-export function getVaultConfig(vaultPath: string, configFile: string): Record<string, unknown> | null {
+export function getVaultConfig(
+  vaultPath: string,
+  configFile: string,
+): Record<string, unknown> | null {
   const configPath = path.join(vaultPath, ".obsidian", configFile);
   try {
     const content = fs.readFileSync(configPath, "utf-8");

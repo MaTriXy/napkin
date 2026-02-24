@@ -1,17 +1,26 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { findVault } from "../utils/vault.js";
+import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { listFiles, resolveFile } from "../utils/files.js";
 import { extractTasks, type Task } from "../utils/markdown.js";
+import {
+  bold,
+  dim,
+  error,
+  type OutputOptions,
+  output,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 import { getDailyPath } from "./daily.js";
-import { type OutputOptions, output, error, dim, bold } from "../utils/output.js";
-import { EXIT_USER_ERROR, EXIT_NOT_FOUND } from "../utils/exit-codes.js";
 
 interface TaskWithFile extends Task {
   file: string;
 }
 
-function collectTasks(vaultPath: string, opts: { file?: string; daily?: boolean }): TaskWithFile[] {
+function collectTasks(
+  vaultPath: string,
+  opts: { file?: string; daily?: boolean },
+): TaskWithFile[] {
   let files: string[];
 
   if (opts.daily) {
@@ -35,16 +44,18 @@ function collectTasks(vaultPath: string, opts: { file?: string; daily?: boolean 
   return results;
 }
 
-export async function tasks(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  done?: boolean;
-  todo?: boolean;
-  total?: boolean;
-  verbose?: boolean;
-  daily?: boolean;
-  status?: string;
-}) {
+export async function tasks(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    done?: boolean;
+    todo?: boolean;
+    total?: boolean;
+    verbose?: boolean;
+    daily?: boolean;
+    status?: string;
+  },
+) {
   const v = findVault(opts.vault);
   let result = collectTasks(v.path, { file: opts.file, daily: opts.daily });
 
@@ -61,7 +72,7 @@ export async function tasks(opts: OutputOptions & {
         const byFile = new Map<string, TaskWithFile[]>();
         for (const t of result) {
           if (!byFile.has(t.file)) byFile.set(t.file, []);
-          byFile.get(t.file)!.push(t);
+          byFile.get(t.file)?.push(t);
         }
         for (const [file, tasks] of byFile) {
           console.log(bold(file));
@@ -78,17 +89,19 @@ export async function tasks(opts: OutputOptions & {
   });
 }
 
-export async function task(opts: OutputOptions & {
-  vault?: string;
-  file?: string;
-  line?: string;
-  ref?: string;
-  toggle?: boolean;
-  done?: boolean;
-  todo?: boolean;
-  status?: string;
-  daily?: boolean;
-}) {
+export async function task(
+  opts: OutputOptions & {
+    vault?: string;
+    file?: string;
+    line?: string;
+    ref?: string;
+    toggle?: boolean;
+    done?: boolean;
+    todo?: boolean;
+    status?: string;
+    daily?: boolean;
+  },
+) {
   const v = findVault(opts.vault);
 
   let filePath: string;
@@ -106,10 +119,10 @@ export async function task(opts: OutputOptions & {
       process.exit(EXIT_NOT_FOUND);
     }
     filePath = resolved;
-    lineNum = Number.parseInt(parts[1]);
+    lineNum = Number.parseInt(parts[1], 10);
   } else if (opts.daily) {
     filePath = getDailyPath(v.path);
-    lineNum = Number.parseInt(opts.line || "0");
+    lineNum = Number.parseInt(opts.line || "0", 10);
   } else {
     if (!opts.file || !opts.line) {
       error("Specify --file and --line, or --ref <path:line>");
@@ -121,7 +134,7 @@ export async function task(opts: OutputOptions & {
       process.exit(EXIT_NOT_FOUND);
     }
     filePath = resolved;
-    lineNum = Number.parseInt(opts.line);
+    lineNum = Number.parseInt(opts.line, 10);
   }
 
   const fullPath = path.join(v.path, filePath);
@@ -160,7 +173,12 @@ export async function task(opts: OutputOptions & {
     fs.writeFileSync(fullPath, lines.join("\n"));
 
     output(opts, {
-      json: () => ({ file: filePath, line: lineNum, status: newStatus, text: taskMatch[3].slice(2) }),
+      json: () => ({
+        file: filePath,
+        line: lineNum,
+        status: newStatus,
+        text: taskMatch[3].slice(2),
+      }),
       human: () => console.log(`[${newStatus}] ${taskMatch[3].slice(2)}`),
     });
   } else {

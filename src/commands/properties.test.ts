@@ -1,20 +1,25 @@
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
-import { properties, propertySet, propertyRemove, propertyRead } from "./properties.js";
+import {
+  properties,
+  propertyRead,
+  propertyRemove,
+  propertySet,
+} from "./properties.js";
 
 let v: { path: string; cleanup: () => void };
 
-function captureJson(fn: () => Promise<void>): Promise<Record<string, unknown>> {
-  return new Promise(async (resolve) => {
-    const orig = console.log;
-    const logs: string[] = [];
-    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
-    await fn();
-    console.log = orig;
-    resolve(JSON.parse(logs.join("")));
-  });
+async function captureJson(
+  fn: () => Promise<void>,
+): Promise<Record<string, unknown>> {
+  const orig = console.log;
+  const logs: string[] = [];
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  await fn();
+  console.log = orig;
+  return JSON.parse(logs.join(""));
 }
 
 beforeEach(() => {
@@ -31,20 +36,26 @@ afterEach(() => {
 
 describe("properties", () => {
   test("lists all properties", async () => {
-    const data = await captureJson(() => properties({ json: true, vault: v.path }));
+    const data = await captureJson(() =>
+      properties({ json: true, vault: v.path }),
+    );
     expect(data.properties).toContain("title");
     expect(data.properties).toContain("status");
   });
 
   test("returns counts", async () => {
-    const data = await captureJson(() => properties({ json: true, vault: v.path, counts: true }));
+    const data = await captureJson(() =>
+      properties({ json: true, vault: v.path, counts: true }),
+    );
     const p = data.properties as Record<string, number>;
     expect(p.title).toBe(2);
     expect(p.status).toBe(1);
   });
 
   test("returns total", async () => {
-    const data = await captureJson(() => properties({ json: true, vault: v.path, total: true }));
+    const data = await captureJson(() =>
+      properties({ json: true, vault: v.path, total: true }),
+    );
     expect(data.total).toBe(2);
   });
 });
@@ -61,7 +72,13 @@ describe("propertyRead", () => {
 describe("propertySet", () => {
   test("sets a property", async () => {
     await captureJson(() =>
-      propertySet({ json: true, vault: v.path, file: "note1", name: "priority", value: "high" }),
+      propertySet({
+        json: true,
+        vault: v.path,
+        file: "note1",
+        name: "priority",
+        value: "high",
+      }),
     );
     const content = fs.readFileSync(path.join(v.path, "note1.md"), "utf-8");
     expect(content).toContain("priority: high");
@@ -71,7 +88,12 @@ describe("propertySet", () => {
 describe("propertyRemove", () => {
   test("removes a property", async () => {
     await captureJson(() =>
-      propertyRemove({ json: true, vault: v.path, file: "note1", name: "status" }),
+      propertyRemove({
+        json: true,
+        vault: v.path,
+        file: "note1",
+        name: "status",
+      }),
     );
     const content = fs.readFileSync(path.join(v.path, "note1.md"), "utf-8");
     expect(content).not.toContain("status");

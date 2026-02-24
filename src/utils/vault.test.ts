@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { findVault, getVaultConfig } from "./vault.js";
 import { createTempVault } from "./test-helpers.js";
+import { findVault, getVaultConfig } from "./vault.js";
 
 let vault: { path: string; cleanup: () => void };
 

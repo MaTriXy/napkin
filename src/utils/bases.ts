@@ -2,9 +2,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import initSqlJs, { type Database } from "sql.js";
 import { listFiles } from "./files.js";
+import { createFormulaEngine, evaluateFormulas } from "./formula.js";
 import { parseFrontmatter } from "./frontmatter.js";
-import { extractTags, extractLinks } from "./markdown.js";
-import { createFormulaEngine, evaluateFormulas, buildFormulaContext } from "./formula.js";
+import { extractLinks, extractTags } from "./markdown.js";
 
 export interface BaseView {
   type: string;
@@ -132,7 +132,11 @@ export async function buildDatabase(vaultPath: string): Promise<Database> {
       // Find target file by basename match (case-insensitive, like wikilinks)
       const linkLower = link.toLowerCase();
       for (const target of fileData) {
-        if (target.basename.toLowerCase() === linkLower || target.name.toLowerCase() === linkLower || target.name.toLowerCase() === `${linkLower}.md`) {
+        if (
+          target.basename.toLowerCase() === linkLower ||
+          target.name.toLowerCase() === linkLower ||
+          target.name.toLowerCase() === `${linkLower}.md`
+        ) {
           const bl = backlinkMap.get(target.path) || [];
           bl.push(f.basename);
           backlinkMap.set(target.path, bl);
@@ -146,7 +150,22 @@ export async function buildDatabase(vaultPath: string): Promise<Database> {
 
   const propNames = [...allProps];
   // 13 base columns + N prop columns
-  const placeholders = ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", ...propNames.map(() => "?")].join(", ");
+  const placeholders = [
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    "?",
+    ...propNames.map(() => "?"),
+  ].join(", ");
   const insertSQL = `INSERT INTO files VALUES (${placeholders})`;
 
   for (const f of fileData) {
@@ -163,15 +182,33 @@ export async function buildDatabase(vaultPath: string): Promise<Database> {
     const fullPath = path.join(vaultPath, f.path);
     const content = fs.readFileSync(fullPath, "utf-8");
     const embeds: string[] = [];
-    let em: RegExpExecArray | null;
-    while ((em = embedRegex.exec(content)) !== null) {
+    for (
+      let em = embedRegex.exec(content);
+      em !== null;
+      em = embedRegex.exec(content)
+    ) {
       embeds.push(em[1]);
     }
     embedRegex.lastIndex = 0;
 
     const fileProps = JSON.stringify(f.properties);
 
-    db.run(insertSQL, [f.path, f.name, f.basename, f.folder, f.ext, f.size, f.ctime, f.mtime, f.tags, f.links, backlinks, JSON.stringify(embeds), fileProps, ...propValues]);
+    db.run(insertSQL, [
+      f.path,
+      f.name,
+      f.basename,
+      f.folder,
+      f.ext,
+      f.size,
+      f.ctime,
+      f.mtime,
+      f.tags,
+      f.links,
+      backlinks,
+      JSON.stringify(embeds),
+      fileProps,
+      ...propValues,
+    ]);
   }
 
   return db;
@@ -181,7 +218,10 @@ export async function buildDatabase(vaultPath: string): Promise<Database> {
  * Translate a Bases filter expression to SQL WHERE clause.
  * Handles the recursive and/or/not structure and simple comparison strings.
  */
-export function filterToSQL(filter: unknown, thisFile?: { name: string; path: string; folder: string }): string {
+export function filterToSQL(
+  filter: unknown,
+  thisFile?: { name: string; path: string; folder: string },
+): string {
   if (!filter) return "1=1";
 
   if (typeof filter === "string") {
@@ -192,15 +232,21 @@ export function filterToSQL(filter: unknown, thisFile?: { name: string; path: st
     const obj = filter as Record<string, unknown>;
 
     if (obj.and) {
-      const clauses = (obj.and as unknown[]).map((f) => filterToSQL(f, thisFile));
+      const clauses = (obj.and as unknown[]).map((f) =>
+        filterToSQL(f, thisFile),
+      );
       return `(${clauses.join(" AND ")})`;
     }
     if (obj.or) {
-      const clauses = (obj.or as unknown[]).map((f) => filterToSQL(f, thisFile));
+      const clauses = (obj.or as unknown[]).map((f) =>
+        filterToSQL(f, thisFile),
+      );
       return `(${clauses.join(" OR ")})`;
     }
     if (obj.not) {
-      const clauses = (obj.not as unknown[]).map((f) => filterToSQL(f, thisFile));
+      const clauses = (obj.not as unknown[]).map((f) =>
+        filterToSQL(f, thisFile),
+      );
       return `NOT (${clauses.join(" AND ")})`;
     }
   }
@@ -213,7 +259,10 @@ export function filterToSQL(filter: unknown, thisFile?: { name: string; path: st
  * e.g. 'status != "done"' -> "prop_status != 'done'"
  * e.g. 'file.hasTag("book")' -> "tags LIKE '%\"book\"%'"
  */
-function translateExpression(expr: string, thisFile?: { name: string; path: string; folder: string }): string {
+function translateExpression(
+  expr: string,
+  thisFile?: { name: string; path: string; folder: string },
+): string {
   expr = expr.trim();
 
   // Replace this.file.* references with literal values
@@ -330,9 +379,11 @@ function translateExpression(expr: string, thisFile?: { name: string; path: stri
     // Try resolving both sides as date expressions first
     const leftDate = resolveDateExpr(leftRaw);
     const rightDate = resolveDateExpr(rightRaw);
-    const left = leftDate !== null ? String(leftDate) : translateProperty(leftRaw);
+    const left =
+      leftDate !== null ? String(leftDate) : translateProperty(leftRaw);
     const op = cmpMatch[2] === "==" ? "=" : cmpMatch[2];
-    const right = rightDate !== null ? String(rightDate) : translateValue(rightRaw);
+    const right =
+      rightDate !== null ? String(rightDate) : translateValue(rightRaw);
     return `${left} ${op} ${right}`;
   }
 
@@ -344,7 +395,10 @@ function translateExpression(expr: string, thisFile?: { name: string; path: stri
  * Split an expression on && and || operators, respecting parentheses and quotes.
  * Returns null if no boolean operators found at the top level.
  */
-function splitOnBooleanOps(expr: string, thisFile?: { name: string; path: string; folder: string }): string | null {
+function splitOnBooleanOps(
+  expr: string,
+  thisFile?: { name: string; path: string; folder: string },
+): string | null {
   let depth = 0;
   let inString: string | null = null;
 
@@ -355,9 +409,18 @@ function splitOnBooleanOps(expr: string, thisFile?: { name: string; path: string
       if (ch === inString && expr[i - 1] !== "\\") inString = null;
       continue;
     }
-    if (ch === '"' || ch === "'") { inString = ch; continue; }
-    if (ch === "(") { depth++; continue; }
-    if (ch === ")") { depth--; continue; }
+    if (ch === '"' || ch === "'") {
+      inString = ch;
+      continue;
+    }
+    if (ch === "(") {
+      depth++;
+      continue;
+    }
+    if (ch === ")") {
+      depth--;
+      continue;
+    }
 
     if (depth === 0) {
       if (expr[i] === "&" && expr[i + 1] === "&") {
@@ -401,7 +464,10 @@ function translateValue(val: string): string {
   if (dateResolved !== null) return String(dateResolved);
 
   // Quoted string
-  if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+  if (
+    (val.startsWith('"') && val.endsWith('"')) ||
+    (val.startsWith("'") && val.endsWith("'"))
+  ) {
     return `'${escapeSql(val.slice(1, -1))}'`;
   }
   // Number
@@ -417,19 +483,43 @@ function translateValue(val: string): string {
  * Parse duration string like "7d", "1 week", "2h" into milliseconds.
  */
 function parseDuration(dur: string): number {
-  const match = dur.match(/^(\d+)\s*(y|year|years|M|month|months|d|day|days|w|week|weeks|h|hour|hours|m|minute|minutes|s|second|seconds)$/);
+  const match = dur.match(
+    /^(\d+)\s*(y|year|years|M|month|months|d|day|days|w|week|weeks|h|hour|hours|m|minute|minutes|s|second|seconds)$/,
+  );
   if (!match) return 0;
-  const n = Number.parseInt(match[1]);
+  const n = Number.parseInt(match[1], 10);
   const unit = match[2];
   switch (unit) {
-    case "y": case "year": case "years": return n * 365.25 * 24 * 60 * 60 * 1000;
-    case "M": case "month": case "months": return n * 30.44 * 24 * 60 * 60 * 1000;
-    case "w": case "week": case "weeks": return n * 7 * 24 * 60 * 60 * 1000;
-    case "d": case "day": case "days": return n * 24 * 60 * 60 * 1000;
-    case "h": case "hour": case "hours": return n * 60 * 60 * 1000;
-    case "m": case "minute": case "minutes": return n * 60 * 1000;
-    case "s": case "second": case "seconds": return n * 1000;
-    default: return 0;
+    case "y":
+    case "year":
+    case "years":
+      return n * 365.25 * 24 * 60 * 60 * 1000;
+    case "M":
+    case "month":
+    case "months":
+      return n * 30.44 * 24 * 60 * 60 * 1000;
+    case "w":
+    case "week":
+    case "weeks":
+      return n * 7 * 24 * 60 * 60 * 1000;
+    case "d":
+    case "day":
+    case "days":
+      return n * 24 * 60 * 60 * 1000;
+    case "h":
+    case "hour":
+    case "hours":
+      return n * 60 * 60 * 1000;
+    case "m":
+    case "minute":
+    case "minutes":
+      return n * 60 * 1000;
+    case "s":
+    case "second":
+    case "seconds":
+      return n * 1000;
+    default:
+      return 0;
   }
 }
 
@@ -489,8 +579,7 @@ function resolveDateExpr(expr: string): number | null {
 function parseStringArgs(argsStr: string): string[] {
   const args: string[] = [];
   const regex = /"([^"]+)"|'([^']+)'/g;
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(argsStr)) !== null) {
+  for (let m = regex.exec(argsStr); m !== null; m = regex.exec(argsStr)) {
     args.push(m[1] || m[2]);
   }
   return args;
@@ -517,7 +606,13 @@ export async function queryBase(
   baseConfig: BaseConfig,
   viewName?: string,
   thisFile?: { name: string; path: string; folder: string },
-): Promise<{ columns: string[]; rows: unknown[][]; groups?: { key: string; rows: unknown[][] }[]; summaries?: Record<string, unknown>; displayNames?: Record<string, string> }> {
+): Promise<{
+  columns: string[];
+  rows: unknown[][];
+  groups?: { key: string; rows: unknown[][] }[];
+  summaries?: Record<string, unknown>;
+  displayNames?: Record<string, string>;
+}> {
   const view = viewName
     ? baseConfig.views?.find((v) => v.name === viewName)
     : baseConfig.views?.[0];
@@ -537,7 +632,9 @@ export async function queryBase(
     if (result.length === 0) return { columns: [], rows: [] };
 
     // Clean up column names (remove prop_ prefix for display)
-    const columns = result[0].columns.map((c) => (c.startsWith("prop_") ? c.slice(5) : c));
+    const columns = result[0].columns.map((c: string) =>
+      c.startsWith("prop_") ? c.slice(5) : c,
+    );
     let rows = result[0].values;
 
     // Evaluate formulas if any
@@ -548,7 +645,13 @@ export async function queryBase(
 
       const newRows: unknown[][] = [];
       for (const row of rows) {
-        const formulaResults = await evaluateFormulas(engine, formulas, columns, row, thisFile);
+        const formulaResults = await evaluateFormulas(
+          engine,
+          formulas,
+          columns,
+          row,
+          thisFile,
+        );
         const newRow = [...row, ...Object.values(formulaResults)];
         newRows.push(newRow);
       }
@@ -570,16 +673,19 @@ export async function queryBase(
     let groups: { key: string; rows: unknown[][] }[] | undefined;
     if (view?.groupBy) {
       const groupProp = view.groupBy.property;
-      const groupIdx = columns.indexOf(groupProp) !== -1
-        ? columns.indexOf(groupProp)
-        : columns.indexOf(groupProp.startsWith("note.") ? groupProp.slice(5) : groupProp);
+      const groupIdx =
+        columns.indexOf(groupProp) !== -1
+          ? columns.indexOf(groupProp)
+          : columns.indexOf(
+              groupProp.startsWith("note.") ? groupProp.slice(5) : groupProp,
+            );
 
       if (groupIdx !== -1) {
         const groupMap = new Map<string, unknown[][]>();
         for (const row of rows) {
           const key = String(row[groupIdx] ?? "(empty)");
           if (!groupMap.has(key)) groupMap.set(key, []);
-          groupMap.get(key)!.push(row);
+          groupMap.get(key)?.push(row);
         }
         groups = [...groupMap.entries()].map(([key, rows]) => ({ key, rows }));
         if (view.groupBy.direction === "DESC") groups.reverse();
@@ -592,12 +698,15 @@ export async function queryBase(
     if (viewSummaries) {
       summaries = {};
       for (const [prop, fn] of Object.entries(viewSummaries)) {
-        const colIdx = columns.indexOf(prop) !== -1
-          ? columns.indexOf(prop)
-          : columns.indexOf(prop.startsWith("note.") ? prop.slice(5) : prop);
+        const colIdx =
+          columns.indexOf(prop) !== -1
+            ? columns.indexOf(prop)
+            : columns.indexOf(prop.startsWith("note.") ? prop.slice(5) : prop);
         if (colIdx === -1) continue;
 
-        const values = rows.map((r) => r[colIdx]).filter((v) => v !== null && v !== undefined);
+        const values = rows
+          .map((r: unknown[]) => r[colIdx])
+          .filter((v: unknown) => v !== null && v !== undefined);
         summaries[prop] = computeSummary(fn, values, baseConfig);
       }
     }
@@ -617,42 +726,68 @@ function computeSummary(
   baseConfig: BaseConfig,
 ): unknown {
   // Check custom summaries first
-  if (baseConfig.summaries && fn in (baseConfig.summaries as Record<string, string>)) {
+  if (
+    baseConfig.summaries &&
+    fn in (baseConfig.summaries as Record<string, string>)
+  ) {
     // Custom summary formula — evaluate with jexl
     // For now, use built-in fallback
   }
 
   const nums = values.map(Number).filter((n) => !Number.isNaN(n));
-  const dates = values.map((v) => new Date(v as string).getTime()).filter((n) => !Number.isNaN(n));
+  const dates = values
+    .map((v) => new Date(v as string).getTime())
+    .filter((n) => !Number.isNaN(n));
 
   switch (fn) {
-    case "Sum": return nums.reduce((a, b) => a + b, 0);
-    case "Average": return nums.length > 0 ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
-    case "Min": return nums.length > 0 ? Math.min(...nums) : null;
-    case "Max": return nums.length > 0 ? Math.max(...nums) : null;
-    case "Range": return nums.length > 0 ? Math.max(...nums) - Math.min(...nums) : null;
+    case "Sum":
+      return nums.reduce((a, b) => a + b, 0);
+    case "Average":
+      return nums.length > 0
+        ? nums.reduce((a, b) => a + b, 0) / nums.length
+        : 0;
+    case "Min":
+      return nums.length > 0 ? Math.min(...nums) : null;
+    case "Max":
+      return nums.length > 0 ? Math.max(...nums) : null;
+    case "Range":
+      return nums.length > 0 ? Math.max(...nums) - Math.min(...nums) : null;
     case "Median": {
       if (nums.length === 0) return null;
       const sorted = [...nums].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      return sorted.length % 2
+        ? sorted[mid]
+        : (sorted[mid - 1] + sorted[mid]) / 2;
     }
     case "Stddev": {
       if (nums.length === 0) return null;
       const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-      const variance = nums.reduce((sum, n) => sum + (n - mean) ** 2, 0) / nums.length;
+      const variance =
+        nums.reduce((sum, n) => sum + (n - mean) ** 2, 0) / nums.length;
       return Math.sqrt(variance);
     }
-    case "Earliest": return dates.length > 0 ? Math.min(...dates) : null;
-    case "Latest": return dates.length > 0 ? Math.max(...dates) : null;
-    case "Checked": return values.filter((v) => v === "true" || v === true || v === 1 || v === "1").length;
-    case "Unchecked": return values.filter((v) => v === "false" || v === false || v === 0 || v === "0").length;
-    case "Empty": return values.filter((v) => v === null || v === undefined || v === "").length;
-    case "Filled": return values.filter((v) => v !== null && v !== undefined && v !== "").length;
-    case "Unique": return new Set(values.map(String)).size;
-    default: return null;
+    case "Earliest":
+      return dates.length > 0 ? Math.min(...dates) : null;
+    case "Latest":
+      return dates.length > 0 ? Math.max(...dates) : null;
+    case "Checked":
+      return values.filter(
+        (v) => v === "true" || v === true || v === 1 || v === "1",
+      ).length;
+    case "Unchecked":
+      return values.filter(
+        (v) => v === "false" || v === false || v === 0 || v === "0",
+      ).length;
+    case "Empty":
+      return values.filter((v) => v === null || v === undefined || v === "")
+        .length;
+    case "Filled":
+      return values.filter((v) => v !== null && v !== undefined && v !== "")
+        .length;
+    case "Unique":
+      return new Set(values.map(String)).size;
+    default:
+      return null;
   }
 }
-
-
-
