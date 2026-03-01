@@ -9,7 +9,13 @@ export function createTempVault(files?: Record<string, string>): {
   path: string;
   cleanup: () => void;
 } {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "obsidian-cli-test-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-test-"));
+
+  // Create .napkin/ marker directory
+  const napkinDir = path.join(tmpDir, ".napkin");
+  fs.mkdirSync(napkinDir, { recursive: true });
+
+  // Create .obsidian/ for Obsidian compatibility
   const obsidianDir = path.join(tmpDir, ".obsidian");
   fs.mkdirSync(obsidianDir, { recursive: true });
 

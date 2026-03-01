@@ -31,6 +31,7 @@ import {
   dailyRead,
 } from "./commands/daily.js";
 import { file, files, folder, folders } from "./commands/files.js";
+import { init } from "./commands/init.js";
 import {
   backlinks,
   deadends,
@@ -83,6 +84,15 @@ program
     } else {
       console.log(`napkin ${version}`);
     }
+  });
+
+program
+  .command("init")
+  .description("Initialize a new vault")
+  .option("--path <path>", "Directory to initialize (default: cwd)")
+  .action(async (opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    await init(root);
   });
 
 program

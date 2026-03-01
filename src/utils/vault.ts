@@ -7,7 +7,7 @@ export interface VaultInfo {
 }
 
 /**
- * Walk up from startDir looking for .obsidian/ folder.
+ * Walk up from startDir looking for .napkin/ or .obsidian/ folder.
  * Returns vault name and absolute path, or throws if not found.
  */
 export function findVault(startDir?: string): VaultInfo {
@@ -15,17 +15,27 @@ export function findVault(startDir?: string): VaultInfo {
   const root = path.parse(dir).root;
 
   while (true) {
+    const napkinDir = path.join(dir, ".napkin");
     const obsidianDir = path.join(dir, ".obsidian");
+
+    // Prefer .napkin/, fall back to .obsidian/
+    if (fs.existsSync(napkinDir) && fs.statSync(napkinDir).isDirectory()) {
+      return {
+        name: path.basename(dir),
+        path: dir,
+      };
+    }
     if (fs.existsSync(obsidianDir) && fs.statSync(obsidianDir).isDirectory()) {
       return {
         name: path.basename(dir),
         path: dir,
       };
     }
+
     const parent = path.dirname(dir);
     if (parent === dir || dir === root) {
       throw new Error(
-        "No Obsidian vault found. Run this command inside a vault directory (a folder containing .obsidian/).",
+        "No vault found. Run 'napkin init' to create one, or run this command inside a vault directory (containing .napkin/ or .obsidian/).",
       );
     }
     dir = parent;

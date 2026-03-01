@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { createTempVault } from "./test-helpers.js";
 import { findVault, getVaultConfig } from "./vault.js";
 
@@ -20,14 +23,37 @@ describe("findVault", () => {
 
   test("finds vault from subdirectory", () => {
     const sub = `${vault.path}/some/nested/dir`;
-    const fs = require("node:fs");
     fs.mkdirSync(sub, { recursive: true });
     const result = findVault(sub);
     expect(result.path).toBe(vault.path);
   });
 
   test("throws when no vault found", () => {
-    expect(() => findVault("/tmp")).toThrow("No Obsidian vault found");
+    expect(() => findVault("/tmp")).toThrow("No vault found");
+  });
+
+  test("finds vault with only .napkin/ directory", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-only-test-"));
+    fs.mkdirSync(path.join(tmpDir, ".napkin"));
+    try {
+      const result = findVault(tmpDir);
+      expect(result.path).toBe(tmpDir);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("finds vault with only .obsidian/ directory", () => {
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "obsidian-only-test-"),
+    );
+    fs.mkdirSync(path.join(tmpDir, ".obsidian"));
+    try {
+      const result = findVault(tmpDir);
+      expect(result.path).toBe(tmpDir);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
 
