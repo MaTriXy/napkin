@@ -25,3 +25,6 @@ bun.lock
 
 # Nanny
 .nanny/
+
+# Vault (local content)
+.napkin/
