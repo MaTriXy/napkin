@@ -53,7 +53,7 @@ Steps:
    - If a note already covers this, skip it or append to it with \`napkin append\`
    - If it's new, run \`napkin create\` using the right template format
    - Add \`[[wikilinks]]\` to related notes you found in search
-6. Put notes in the right folders (decisions/, architecture/, guides/, changelog/)
+6. Put notes in the folders that match the vault structure from the overview
 
 Be selective. Only capture knowledge that would be useful to someone working on this project later. Skip meta-discussion, tool output, and small talk.
 
