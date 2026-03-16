@@ -9,6 +9,67 @@ CLI for Obsidian vaults. Operates directly on markdown files — no Obsidian app
 
 Install: `npm install -g napkin-ai`
 
+## Vault Structure
+
+`.napkin/` is the vault root — all content lives inside it:
+
+```
+my-project/
+  .napkin/                  # The vault
+    NAPKIN.md               # Context note (Level 0)
+    config.json             # Unified config (syncs to .obsidian/)
+    decisions/              # Template-defined directories
+    architecture/
+    Templates/              # Note templates
+    .obsidian/              # Obsidian compatibility (auto-generated)
+  src/                      # Project source (not in vault)
+```
+
+## Progressive Disclosure
+
+napkin reveals information gradually — overview first, then search, then read:
+
+| Level | Command | What it does |
+|-------|---------|-------------|
+| L0 | `NAPKIN.md` | Project context note |
+| L1 | `napkin overview` | L0 + vault map with TF-IDF keywords per folder |
+| L2 | `napkin search <query>` | BM25 + backlinks + recency ranked results with snippets |
+| L3 | `napkin read <file>` | Full file content |
+
+**Workflow: overview → search → read**
+
+## Initialize
+
+```bash
+napkin init                              # Initialize empty vault
+napkin init --template coding            # Scaffold with template
+napkin init --template company           # people/, projects/, runbooks/, infrastructure/
+napkin init --template product           # features/, roadmap/, research/, specs/, releases/
+napkin init --template personal          # people/, projects/, areas/, references/
+napkin init --template research          # papers/, concepts/, questions/, experiments/
+napkin init --list                       # List available templates
+napkin init --path /some/dir             # Initialize in specific directory
+```
+
+Each template includes directory structure, `_about.md` files, Obsidian note templates, and a `NAPKIN.md` skeleton.
+
+## Overview & Graph
+
+```bash
+napkin overview                          # Vault map with TF-IDF keywords per folder
+napkin overview --depth 3                # Limit folder depth
+napkin overview --keywords 5             # Max keywords per folder
+napkin graph                             # Interactive force-directed vault graph
+```
+
+## Config
+
+```bash
+napkin config show                       # Show full config
+napkin config get --key search.limit     # Get a value
+napkin config set --key search.limit --value 50
+```
+
 ## Syntax
 
 napkin uses standard CLI flags. Quote values with spaces:
@@ -82,7 +143,7 @@ napkin daily prepend --content "## Morning"
 
 ### Search
 
-Full-text search with relevance ranking (fuzzy matching, prefix search, filename boosting).
+Ranked search using BM25 + backlinks + recency. Returns snippets with context by default.
 
 ```bash
 napkin search "meeting"                     # Find files matching text
@@ -90,7 +151,9 @@ napkin search --query "meeting"             # Same, using flag
 napkin search "TODO" --path Projects        # Limit to folder
 napkin search "bug" --total                 # Count matches
 napkin search "deploy" --limit 5            # Top 5 results
-napkin search "TODO" --context              # Grep-style file:line:text output
+napkin search "TODO" --no-snippets          # Files only, no snippets
+napkin search "deploy" --snippet-lines 3    # Context lines around matches
+napkin search "auth" --score               # Include relevance score
 ```
 
 ### Tasks — `napkin task`
