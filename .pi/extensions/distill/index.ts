@@ -44,15 +44,18 @@ function findVaultPath(cwd: string): string | null {
 const DISTILL_PROMPT = `You are a knowledge base distiller. Your job is to extract valuable knowledge from this conversation and save it to the napkin vault.
 
 Steps:
-1. Run napkin overview to see the vault structure and what's already there
-2. Run napkin template list and napkin template read --name <name> to see note formats
-3. Identify knowledge worth capturing: decisions, architecture insights, guides, patterns
-4. For each piece, run napkin create to write a note using the right template format
-5. Put notes in the right folders (decisions/, architecture/, guides/, changelog/)
+1. Run \`napkin overview\` to understand the vault structure
+2. Run \`napkin search\` for each topic you plan to distill — check what already exists before creating anything
+3. Run \`napkin template list\` and \`napkin template read --name <name>\` to see note formats
+4. Identify knowledge worth capturing: decisions, architecture insights, guides, patterns
+5. For each piece:
+   - Search first to find related existing notes
+   - If a note already covers this, skip it or append to it with \`napkin append\`
+   - If it's new, run \`napkin create\` using the right template format
+   - Add \`[[wikilinks]]\` to related notes you found in search
+6. Put notes in the right folders (decisions/, architecture/, guides/, changelog/)
 
 Be selective. Only capture knowledge that would be useful to someone working on this project later. Skip meta-discussion, tool output, and small talk.
-
-Do NOT create duplicate notes for things already in the vault.
 
 Start by running napkin overview.`;
 
