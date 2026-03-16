@@ -50,7 +50,7 @@ export default function (pi: ExtensionAPI) {
             "Here is the vault overview. Use `napkin search <query>` to find specific content, " +
             "`napkin read <file>` to open files.\n\n" +
             overview,
-          display: false,
+          display: true,
         },
         { deliverAs: "nextTurn" },
       );
