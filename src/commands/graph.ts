@@ -142,7 +142,7 @@ function buildHTML(graphDataB64: string): string {
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
 <script>
-function dbg(msg) { window.glimpse.send({ dbg: msg }); }
+function dbg(msg) { if (window.glimpse) window.glimpse.send({ dbg: msg }); else console.log('[graph]', msg); }
 let data;
 try {
   data = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob("${graphDataB64}"), c => c.charCodeAt(0))));
@@ -468,17 +468,23 @@ export async function graph(
     process.exit(1);
   }
 
+  const { loadConfig } = await import("../utils/config.js");
+  const config = loadConfig(vault);
+  const renderer = config.graph?.renderer ?? "auto";
+
   const { nodes, links } = buildGraphData(vault);
   const graphDataB64 = Buffer.from(JSON.stringify({ nodes, links })).toString(
     "base64",
   );
   const html = buildHTML(graphDataB64);
 
-  if (platform === "darwin") {
+  const useGlimpse =
+    renderer === "glimpse" || (renderer === "auto" && platform === "darwin");
+
+  if (useGlimpse) {
     try {
       await openWithGlimpse(html);
     } catch {
-      // Glimpse not available, fall back to browser
       await openInBrowser(html);
     }
   } else {

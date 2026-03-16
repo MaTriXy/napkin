@@ -23,6 +23,9 @@ export interface NapkinConfig {
     model: { provider: string; id: string };
     templates: string[];
   };
+  graph: {
+    renderer: "auto" | "glimpse" | "browser";
+  };
 }
 
 export const DEFAULT_CONFIG: NapkinConfig = {
@@ -46,6 +49,9 @@ export const DEFAULT_CONFIG: NapkinConfig = {
     intervalMinutes: 60,
     model: { provider: "anthropic", id: "claude-sonnet-4-6" },
     templates: [],
+  },
+  graph: {
+    renderer: "auto",
   },
 };
 
