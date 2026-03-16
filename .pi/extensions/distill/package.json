@@ -1,0 +1,13 @@
+{
+  "name": "napkin-distill",
+  "version": "0.1.0",
+  "description": "Automatic KB distillation for napkin vaults",
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*",
+    "@sinclair/typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}
