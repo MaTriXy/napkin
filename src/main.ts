@@ -32,6 +32,7 @@ import {
   dailyRead,
 } from "./commands/daily.js";
 import { file, files, folder, folders } from "./commands/files.js";
+import { graph } from "./commands/graph.js";
 import { init, initTemplates } from "./commands/init.js";
 import {
   backlinks,
@@ -99,6 +100,7 @@ Getting started:
   overview             Vault map with TF-IDF keywords per folder
   vault                Show vault info (path, file count, size)
   config               Vault configuration (show, get, set)
+  graph                Interactive vault graph visualization
 
 Reading:
   read <file>          Read a file
@@ -160,6 +162,14 @@ program
   .action(async (opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
     await overview(root);
+  });
+
+program
+  .command("graph")
+  .description("Interactive vault graph visualization")
+  .action(async (_opts, cmd) => {
+    const root = cmd.optsWithGlobals();
+    await graph({}, root);
   });
 
 program
