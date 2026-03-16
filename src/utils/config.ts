@@ -136,23 +136,26 @@ function syncObsidianConfig(vaultPath: string, config: NapkinConfig): void {
   fs.writeFileSync(appPath, JSON.stringify(app, null, 2));
 }
 
-function deepMerge(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>,
-): Record<string, unknown> {
+// biome-ignore lint/suspicious/noExplicitAny: deep merge requires flexible types
+function deepMerge<T extends Record<string, any>>(
+  target: T,
+  source: Record<string, any>,
+): T {
   const result = { ...target };
   for (const key of Object.keys(source)) {
+    const srcVal = source[key];
+    const tgtVal = (target as Record<string, any>)[key];
     if (
-      source[key] &&
-      typeof source[key] === "object" &&
-      !Array.isArray(source[key]) &&
-      target[key] &&
-      typeof target[key] === "object" &&
-      !Array.isArray(target[key])
+      srcVal &&
+      typeof srcVal === "object" &&
+      !Array.isArray(srcVal) &&
+      tgtVal &&
+      typeof tgtVal === "object" &&
+      !Array.isArray(tgtVal)
     ) {
-      result[key] = deepMerge(target[key], source[key]);
+      (result as Record<string, any>)[key] = deepMerge(tgtVal, srcVal);
     } else {
-      result[key] = source[key];
+      (result as Record<string, any>)[key] = srcVal;
     }
   }
   return result;
