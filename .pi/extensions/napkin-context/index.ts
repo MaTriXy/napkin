@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execSync } from "node:child_process";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 function findVaultPath(cwd: string): string | null {
@@ -14,10 +15,19 @@ function findVaultPath(cwd: string): string | null {
   return null;
 }
 
-function readNapkinMd(vaultPath: string): string | null {
-  const napkinPath = path.join(vaultPath, "NAPKIN.md");
-  if (!fs.existsSync(napkinPath)) return null;
-  return fs.readFileSync(napkinPath, "utf-8").trim();
+function getOverview(vaultPath: string): string | null {
+  try {
+    const output = execSync(`napkin overview --vault "${vaultPath}"`, {
+      encoding: "utf-8",
+      timeout: 10000,
+    }).trim();
+    return output || null;
+  } catch {
+    // Fallback to reading NAPKIN.md directly
+    const napkinPath = path.join(vaultPath, "NAPKIN.md");
+    if (!fs.existsSync(napkinPath)) return null;
+    return fs.readFileSync(napkinPath, "utf-8").trim();
+  }
 }
 
 export default function (pi: ExtensionAPI) {
@@ -27,7 +37,7 @@ export default function (pi: ExtensionAPI) {
     const vaultPath = findVaultPath(ctx.cwd);
     if (!vaultPath) return;
 
-    cachedContext = readNapkinMd(vaultPath);
+    cachedContext = getOverview(vaultPath);
 
     if (ctx.hasUI) {
       const theme = ctx.ui.theme;
