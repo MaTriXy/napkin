@@ -1,8 +1,8 @@
 # napkin
 
-🧻 Obsidian-compatible CLI for agents.
+🧻 Knowledge system for AI agents. Local-first, file-based, progressively disclosed.
 
-Every great idea started on a napkin. This one reads your Obsidian vault.
+Every great idea started on a napkin.
 
 ## Install
 
@@ -10,20 +10,73 @@ Every great idea started on a napkin. This one reads your Obsidian vault.
 npm install -g napkin-ai
 ```
 
-## Usage
-
-Run from inside an Obsidian vault (any directory containing `.obsidian/`):
+As a pi package (includes extensions + skills):
 
 ```bash
-cd ~/my-vault
-napkin vault
+pi install npm:napkin-ai
 ```
 
-Or specify the vault path:
+## Quick Start
 
 ```bash
-napkin --vault ~/my-vault vault
+# Initialize a vault with a template
+napkin init --template coding
+
+# See what's in it
+napkin overview
+
+# Search for something
+napkin search "authentication"
+
+# Read a file
+napkin read "Architecture"
 ```
+
+## Vault Structure
+
+`.napkin/` is the vault root — all content lives inside it:
+
+```
+my-project/
+  .napkin/                  # The vault
+    NAPKIN.md               # Context note (Level 0)
+    decisions/              # Template-defined directories
+    architecture/
+    Templates/              # Note templates
+    .obsidian/              # Obsidian compatibility
+  src/                      # Your project (not in vault)
+```
+
+## Progressive Disclosure
+
+napkin is designed as a memory system for AI agents. Instead of dumping the full vault into context, it reveals information gradually:
+
+| Level | Command | Tokens | What it does |
+|-------|---------|--------|-------------|
+| 0 | `NAPKIN.md` | ~200 | Always-loaded context |
+| 1 | `napkin overview` | ~1-2k | Vault map with TF-IDF keywords |
+| 2 | `napkin search <query>` | ~2-5k | Ranked results with snippets |
+| 3 | `napkin read <file>` | ~5-20k | Full file content |
+
+## Templates
+
+Scaffold a vault with a domain-specific structure:
+
+```bash
+napkin init --template coding    # decisions/, architecture/, guides/, changelog/
+napkin init --template company   # people/, projects/, runbooks/, infrastructure/
+napkin init --template product   # features/, roadmap/, research/, specs/, releases/
+napkin init --template personal  # people/, projects/, areas/, references/
+napkin init --template research  # papers/, concepts/, questions/, experiments/
+```
+
+Each template includes directory structure, `_about.md` files, Obsidian note templates, and a `NAPKIN.md` skeleton.
+
+```bash
+napkin templates                 # List available templates
+```
+
+## Commands
 
 ### Global flags
 
@@ -34,12 +87,11 @@ napkin --vault ~/my-vault vault
 | `--vault <path>` | Vault path (default: auto-detect from cwd) |
 | `--copy` | Copy output to clipboard |
 
-## Commands
-
 ### Core
 
 ```bash
 napkin vault                          # Vault info
+napkin overview                       # Vault map with keywords
 napkin read <file>                    # Read file contents
 napkin create --name "Note" --content "Hello"
 napkin append --file "Note" --content "More text"
@@ -47,8 +99,8 @@ napkin prepend --file "Note" --content "Top line"
 napkin move --file "Note" --to Archive
 napkin rename --file "Note" --name "Renamed"
 napkin delete --file "Note"           # Move to .trash
-napkin search "meeting"               # Full-text search
-napkin search "TODO" --context        # Grep-style output
+napkin search "meeting"               # Ranked search with snippets
+napkin search "TODO" --no-snippets    # Files only
 ```
 
 ### Files & folders — `napkin file`
@@ -114,8 +166,6 @@ napkin link deadends                  # No outgoing links
 
 ### Bases — `napkin base`
 
-Query vault files using Obsidian Bases `.base` files.
-
 ```bash
 napkin base list                      # List .base files
 napkin base views --file "projects"   # List views
@@ -125,8 +175,6 @@ napkin base create --file "projects" --name "New Item"
 ```
 
 ### Canvas — `napkin canvas`
-
-Read and write JSON Canvas files (`.canvas`).
 
 ```bash
 napkin canvas list                    # List .canvas files
@@ -141,7 +189,7 @@ napkin canvas remove-node --file "Board" --id abc1
 ### Templates — `napkin template`
 
 ```bash
-napkin template list                  # List templates
+napkin template list                  # List note templates
 napkin template read --name "Daily Note"
 napkin template insert --file "note" --name "Template"
 ```
@@ -158,18 +206,30 @@ napkin bookmark add --file "note"     # Bookmark a file
 ```bash
 napkin outline --file "note"          # Heading tree
 napkin wordcount --file "note"        # Word + character count
-napkin onboard                        # Agent instructions for CLAUDE.md
+napkin onboard                        # Agent instructions
+napkin templates                      # List vault templates
 ```
 
-## File resolution
+## File Resolution
 
 Files can be referenced two ways:
 - **By name** (wikilink-style): `--file "Active Projects"` — searches all `.md` files by basename
 - **By path**: `--file "Projects/Active Projects.md"` — exact path from vault root
 
-## For AI agents
+## Pi Extensions
 
-Every command supports `--json` for structured output. Run `napkin onboard` to get copy-paste instructions for your agent config.
+napkin ships as a pi package with two extensions:
+
+### napkin-context
+Automatically injects the vault overview (NAPKIN.md + folder keywords) into the agent's system prompt at session start. The agent gets Level 0 + Level 1 context for free.
+
+### napkin-distill
+Background KB distillation. Runs on a configurable interval, reads new conversation content, calls a model to extract structured knowledge, and writes notes to the vault using your templates.
+
+Enable with:
+```bash
+napkin config set --key distill.enabled --value true
+```
 
 ## Development
 

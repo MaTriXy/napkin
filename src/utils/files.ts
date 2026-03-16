@@ -30,6 +30,8 @@ export function listFiles(
     ".nanny",
     "node_modules",
   ]);
+  // Internal napkin files that shouldn't appear in vault content listings
+  const skipFiles = new Set(["config.json"]);
 
   const baseDir = opts?.folder ? path.join(vaultPath, opts.folder) : vaultPath;
   if (!fs.existsSync(baseDir)) return results;
@@ -42,6 +44,8 @@ export function listFiles(
       if (entry.isDirectory()) {
         if (!skipDirs.has(entry.name)) walk(fullPath);
       } else if (entry.isFile()) {
+        // Skip internal config files at vault root
+        if (dir === vaultPath && skipFiles.has(entry.name)) continue;
         const rel = path.relative(vaultPath, fullPath);
         if (opts?.ext) {
           if (path.extname(entry.name).slice(1) === opts.ext) {
@@ -116,6 +120,36 @@ export function resolveFile(vaultPath: string, fileRef: string): string | null {
     if (basename === target) return file;
   }
   return null;
+}
+
+/**
+ * Suggest similar filenames when a file isn't found.
+ * Returns up to 3 suggestions sorted by similarity.
+ */
+export function suggestFile(vaultPath: string, fileRef: string): string[] {
+  const target = fileRef.toLowerCase();
+  const allFiles = listFiles(vaultPath, { ext: "md" });
+  const scored = allFiles
+    .map((f) => {
+      const basename = path.basename(f, ".md").toLowerCase();
+      // Simple substring match scoring
+      let score = 0;
+      if (basename.includes(target) || target.includes(basename)) score += 3;
+      // Shared prefix
+      let prefix = 0;
+      while (
+        prefix < basename.length &&
+        prefix < target.length &&
+        basename[prefix] === target[prefix]
+      )
+        prefix++;
+      score += prefix;
+      return { file: f, score };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+  return scored.map((s) => s.file);
 }
 
 /**

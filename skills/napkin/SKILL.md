@@ -23,7 +23,7 @@ napkin create --name "My Note" --content "Hello world"
 |------|-------------|
 | `--json` | Output as JSON (use this for programmatic access) |
 | `-q, --quiet` | Suppress output |
-| `--vault <path>` | Vault path (default: auto-detect by walking up from cwd looking for `.obsidian/`) |
+| `--vault <path>` | Vault path (default: auto-detect by walking up from cwd looking for `.napkin/`) |
 | `--copy` | Copy output to clipboard |
 
 ### File targeting
@@ -70,7 +70,7 @@ napkin delete --file "Note" --permanent     # Delete permanently
 
 ### Daily notes — `napkin daily`
 
-Reads config from `.obsidian/daily-notes.json` (folder, format, template).
+Reads config from `.napkin/.obsidian/daily-notes.json` (folder, format, template).
 
 ```bash
 napkin daily today                          # Create today's daily note (from template if configured)

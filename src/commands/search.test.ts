@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
 import { search } from "./search.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -122,5 +122,57 @@ describe("search", () => {
     );
     const results = data.results as { file: string; modified: string }[];
     expect(results[0].modified).toMatch(/ago$/);
+  });
+
+  test("--snippet-lines adds context around matches", async () => {
+    const data = await captureJson(() =>
+      search({
+        json: true,
+        vault: v.path,
+        query: "TODO",
+        snippetLines: "1",
+      }),
+    );
+    const results = data.results as {
+      snippets: { line: number; text: string }[];
+    }[];
+    const alpha = results.find((r: any) => r.file === "Projects/alpha.md");
+    expect(alpha).toBeDefined();
+    // With context=1, should include lines around the match
+    expect(alpha!.snippets.length).toBeGreaterThan(1);
+  });
+
+  test("empty query returns no results", async () => {
+    const data = await captureJson(() =>
+      search({
+        json: true,
+        vault: v.path,
+        query: "xyznonexistent999",
+      }),
+    );
+    const results = data.results as unknown[];
+    expect(results.length).toBe(0);
+  });
+
+  test("--score includes score in json output", async () => {
+    const data = await captureJson(() =>
+      search({
+        json: true,
+        vault: v.path,
+        query: "alpha",
+        score: true,
+      }),
+    );
+    const results = data.results as { score: number }[];
+    expect(results[0].score).toBeNumber();
+    expect(results[0].score).toBeGreaterThan(0);
+  });
+
+  test("score hidden by default in json output", async () => {
+    const data = await captureJson(() =>
+      search({ json: true, vault: v.path, query: "alpha" }),
+    );
+    const results = data.results as { score?: number }[];
+    expect(results[0].score).toBeUndefined();
   });
 });

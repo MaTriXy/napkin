@@ -1,9 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { listFiles, resolveFile } from "../utils/files.js";
+import { listFiles, resolveFile, suggestFile } from "../utils/files.js";
 import { extractLinks } from "../utils/markdown.js";
-import { dim, error, type OutputOptions, output } from "../utils/output.js";
+import {
+  dim,
+  error,
+  fileNotFound,
+  type OutputOptions,
+  output,
+} from "../utils/output.js";
 import { findVault } from "../utils/vault.js";
 
 interface VaultLinks {
@@ -60,7 +66,7 @@ export async function backlinks(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -87,7 +93,7 @@ export async function links(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 

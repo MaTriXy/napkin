@@ -9,12 +9,7 @@ function getVaultSize(vaultPath: string): number {
   function walk(dir: string) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (
-        entry.name === ".git" ||
-        entry.name === ".obsidian" ||
-        entry.name === ".napkin"
-      )
-        continue;
+      if (entry.name === ".git" || entry.name === ".obsidian") continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
       else total += fs.statSync(full).size;

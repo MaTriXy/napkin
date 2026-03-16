@@ -1,9 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { loadConfig } from "../utils/config.js";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
 import { error, type OutputOptions, output, success } from "../utils/output.js";
-import { findVault, getVaultConfig } from "../utils/vault.js";
+import { findVault } from "../utils/vault.js";
 
 interface DailyConfig {
   folder: string;
@@ -12,14 +13,11 @@ interface DailyConfig {
 }
 
 function getDailyConfig(vaultPath: string): DailyConfig {
-  const config = getVaultConfig(
-    vaultPath,
-    "daily-notes.json",
-  ) as Partial<DailyConfig> | null;
+  const config = loadConfig(vaultPath);
   return {
-    folder: config?.folder || "",
-    format: config?.format || "YYYY-MM-DD",
-    template: config?.template || "",
+    folder: config.daily.folder,
+    format: config.daily.format,
+    template: `${config.templates.folder}/Daily Note`,
   };
 }
 

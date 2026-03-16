@@ -8,7 +8,7 @@ import {
   unresolvedLinks,
 } from "./links.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,

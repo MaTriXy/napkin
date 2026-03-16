@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { createTempVault } from "../utils/test-helpers.js";
 import { task, tasks } from "./tasks.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -108,7 +108,7 @@ describe("task", () => {
         toggle: true,
       }),
     );
-    const content = fs.readFileSync(path.join(v.path, "note.md"), "utf-8");
+    const content = fs.readFileSync(path.join(v.vaultPath, "note.md"), "utf-8");
     expect(content).toContain("[x] Buy groceries");
   });
 
@@ -116,7 +116,7 @@ describe("task", () => {
     await captureJson(() =>
       task({ json: true, vault: v.path, file: "note", line: "2", done: true }),
     );
-    const content = fs.readFileSync(path.join(v.path, "note.md"), "utf-8");
+    const content = fs.readFileSync(path.join(v.vaultPath, "note.md"), "utf-8");
     expect(content).toContain("[x] Buy groceries");
   });
 
@@ -124,7 +124,7 @@ describe("task", () => {
     await captureJson(() =>
       task({ json: true, vault: v.path, file: "note", line: "3", todo: true }),
     );
-    const content = fs.readFileSync(path.join(v.path, "note.md"), "utf-8");
+    const content = fs.readFileSync(path.join(v.vaultPath, "note.md"), "utf-8");
     expect(content).toContain("[ ] Ship feature");
   });
 

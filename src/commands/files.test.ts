@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
 import { file, files, folders } from "./files.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,

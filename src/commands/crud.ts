@@ -1,10 +1,22 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { loadConfig } from "../utils/config.js";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { readFile as readFileUtil, resolveFile } from "../utils/files.js";
+import {
+  listFiles,
+  readFile as readFileUtil,
+  resolveFile,
+  suggestFile,
+} from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
-import { error, type OutputOptions, output, success } from "../utils/output.js";
-import { findVault, getVaultConfig } from "../utils/vault.js";
+import {
+  error,
+  fileNotFound,
+  type OutputOptions,
+  output,
+  success,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 export async function read(
   fileRef: string | undefined,
@@ -12,13 +24,20 @@ export async function read(
 ) {
   const v = findVault(opts.vault);
   if (!fileRef) {
-    error("No file specified. Usage: obsidian-cli read <file>");
+    error("No file specified. Usage: napkin read <file>");
     process.exit(EXIT_USER_ERROR);
   }
-  const { path: filePath, content } = readFileUtil(v.path, fileRef);
+
+  const resolved = resolveFile(v.path, fileRef);
+  if (!resolved) {
+    fileNotFound(fileRef, suggestFile(v.path, fileRef));
+    process.exit(EXIT_NOT_FOUND);
+  }
+
+  const content = fs.readFileSync(path.join(v.path, resolved), "utf-8");
 
   output(opts, {
-    json: () => ({ path: filePath, content }),
+    json: () => ({ path: resolved, content }),
     human: () => console.log(content),
   });
 }
@@ -54,15 +73,18 @@ export async function create(
   let content = opts.content || "";
 
   if (opts.template) {
-    const _templateConfig = getVaultConfig(v.path, "core-plugins.json");
-    // Try to find template in Templates/ folder
+    const config = loadConfig(v.path);
     const templateRef =
       resolveFile(v.path, opts.template) ||
-      resolveFile(v.path, `Templates/${opts.template}`);
+      resolveFile(v.path, `${config.templates.folder}/${opts.template}`);
     if (templateRef) {
       content = fs.readFileSync(path.join(v.path, templateRef), "utf-8");
     } else {
-      error(`Template not found: ${opts.template}`);
+      const tmplFiles = listFiles(v.path, {
+        folder: config.templates.folder,
+        ext: "md",
+      }).map((f: string) => path.basename(f, ".md"));
+      fileNotFound(opts.template, tmplFiles.slice(0, 3));
       process.exit(EXIT_NOT_FOUND);
     }
   }
@@ -96,7 +118,7 @@ export async function append(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -131,7 +153,7 @@ export async function prepend(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -169,7 +191,7 @@ export async function move(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -205,7 +227,7 @@ export async function rename(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -232,7 +254,7 @@ export async function del(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 

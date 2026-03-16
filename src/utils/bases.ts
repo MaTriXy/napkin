@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import yaml from "js-yaml";
 import initSqlJs, { type Database } from "sql.js";
 import { listFiles } from "./files.js";
 import { createFormulaEngine, evaluateFormulas } from "./formula.js";
@@ -28,8 +29,6 @@ export interface BaseConfig {
  * Parse a .base YAML file. Bases are YAML format.
  */
 export function parseBaseFile(content: string): BaseConfig {
-  // .base files are YAML - use a simple parser since we already have gray-matter's js-yaml
-  const yaml = require("js-yaml");
   return yaml.load(content) as BaseConfig;
 }
 

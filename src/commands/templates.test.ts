@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
 import { templateInsert, templateRead, templates } from "./templates.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -74,7 +74,7 @@ describe("templateInsert", () => {
     const fs = require("node:fs");
     const path = require("node:path");
     // Create a target file
-    fs.writeFileSync(path.join(v.path, "target.md"), "# Existing\n\n");
+    fs.writeFileSync(path.join(v.vaultPath, "target.md"), "# Existing\n\n");
 
     const data = await captureJson(() =>
       templateInsert({
@@ -86,7 +86,10 @@ describe("templateInsert", () => {
     );
     expect(data.inserted).toBe(true);
 
-    const content = fs.readFileSync(path.join(v.path, "target.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "target.md"),
+      "utf-8",
+    );
     expect(content).toContain("# Existing");
     // Template variables should be resolved
     expect(content).not.toContain("{{date}}");

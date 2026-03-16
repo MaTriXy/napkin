@@ -1,9 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { resolveFile } from "../utils/files.js";
+import { resolveFile, suggestFile } from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
-import { dim, error, type OutputOptions, output } from "../utils/output.js";
+import {
+  dim,
+  error,
+  fileNotFound,
+  type OutputOptions,
+  output,
+} from "../utils/output.js";
 import { findVault } from "../utils/vault.js";
 
 export async function wordcount(
@@ -22,7 +28,7 @@ export async function wordcount(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 

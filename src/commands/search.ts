@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import MiniSearch from "minisearch";
+import { loadConfig } from "../utils/config.js";
 import { EXIT_USER_ERROR } from "../utils/exit-codes.js";
 import { listFiles, resolveFile } from "../utils/files.js";
 import { extractLinks } from "../utils/markdown.js";
@@ -149,13 +150,16 @@ export async function search(opts: SearchOpts) {
     process.exit(EXIT_USER_ERROR);
   }
 
+  const config = loadConfig(v.path);
   const { index, docs } = buildIndex(v.path, opts.path);
   const backlinkCounts = buildBacklinkCounts(v.path);
   const results = index.search(opts.query);
   const contextLines = opts.snippetLines
     ? Number.parseInt(opts.snippetLines, 10)
-    : 0;
-  const limit = opts.limit ? Number.parseInt(opts.limit, 10) : 30;
+    : config.search.snippetLines;
+  const limit = opts.limit
+    ? Number.parseInt(opts.limit, 10)
+    : config.search.limit;
 
   // Compute composite scores: BM25 + backlinks + recency
   const maxMtime = Math.max(...docs.map((d) => d.mtime));

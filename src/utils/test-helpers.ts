@@ -1,42 +1,41 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { DEFAULT_CONFIG, saveConfig } from "./config.js";
 
 /**
- * Create a temporary vault for testing. Returns path and cleanup function.
+ * Create a temporary vault for testing.
+ * .napkin/ is the vault root — all content lives inside it.
+ * Returns:
+ *   - path: parent dir (pass to --vault for commands, findVault walks up from here)
+ *   - vaultPath: the .napkin/ dir (pass directly to utility functions like listFiles)
+ *   - cleanup: removes everything
  */
 export function createTempVault(files?: Record<string, string>): {
   path: string;
+  vaultPath: string;
   cleanup: () => void;
 } {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-test-"));
 
-  // Create .napkin/ marker directory
+  // .napkin/ IS the vault root
   const napkinDir = path.join(tmpDir, ".napkin");
   fs.mkdirSync(napkinDir, { recursive: true });
 
-  // Create .obsidian/ for Obsidian compatibility
-  const obsidianDir = path.join(tmpDir, ".obsidian");
-  fs.mkdirSync(obsidianDir, { recursive: true });
-
-  // Minimal obsidian config
-  fs.writeFileSync(
-    path.join(obsidianDir, "app.json"),
-    JSON.stringify({ alwaysUpdateLinks: true }),
-  );
-  fs.writeFileSync(
-    path.join(obsidianDir, "daily-notes.json"),
-    JSON.stringify({
+  // Write config.json which also syncs .obsidian/
+  const testConfig = {
+    ...DEFAULT_CONFIG,
+    daily: {
+      ...DEFAULT_CONFIG.daily,
       folder: "Inbox/Daily",
-      format: "YYYY-MM-DD",
-      template: "Templates/Daily Note",
-    }),
-  );
+    },
+  };
+  saveConfig(napkinDir, testConfig);
 
-  // Write any provided files
+  // Write files inside .napkin/ (the vault root)
   if (files) {
     for (const [filePath, content] of Object.entries(files)) {
-      const full = path.join(tmpDir, filePath);
+      const full = path.join(napkinDir, filePath);
       fs.mkdirSync(path.dirname(full), { recursive: true });
       fs.writeFileSync(full, content);
     }
@@ -44,6 +43,7 @@ export function createTempVault(files?: Record<string, string>): {
 
   return {
     path: tmpDir,
+    vaultPath: napkinDir,
     cleanup: () => fs.rmSync(tmpDir, { recursive: true, force: true }),
   };
 }

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createTempVault } from "../utils/test-helpers.js";
 import { vault } from "./vault.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 beforeEach(() => {
   v = createTempVault({
@@ -26,7 +26,7 @@ describe("vault command", () => {
 
     const data = JSON.parse(logs.join(""));
     expect(data.name).toBeTruthy();
-    expect(data.path).toBe(v.path);
+    expect(data.path).toBe(v.vaultPath);
     expect(data.files).toBe(3);
     expect(data.folders).toBe(2);
     expect(data.size).toBeGreaterThan(0);

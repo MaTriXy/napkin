@@ -12,7 +12,7 @@ import {
   canvasRemoveNode,
 } from "./canvas.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -125,7 +125,7 @@ describe("canvasCreate", () => {
     );
     expect(data.created).toBe(true);
     const content = JSON.parse(
-      fs.readFileSync(path.join(v.path, "new-board.canvas"), "utf-8"),
+      fs.readFileSync(path.join(v.vaultPath, "new-board.canvas"), "utf-8"),
     );
     expect(content.nodes).toEqual([]);
     expect(content.edges).toEqual([]);
@@ -147,7 +147,7 @@ describe("canvasAddNode", () => {
     expect(data.type).toBe("text");
 
     const content = JSON.parse(
-      fs.readFileSync(path.join(v.path, "board.canvas"), "utf-8"),
+      fs.readFileSync(path.join(v.vaultPath, "board.canvas"), "utf-8"),
     );
     expect(content.nodes.length).toBe(4);
     const newNode = content.nodes[3];
@@ -189,7 +189,7 @@ describe("canvasAddNode", () => {
       text: "Auto",
     });
     const content = JSON.parse(
-      fs.readFileSync(path.join(v.path, "board.canvas"), "utf-8"),
+      fs.readFileSync(path.join(v.vaultPath, "board.canvas"), "utf-8"),
     );
     const newNode = content.nodes[content.nodes.length - 1];
     // Should be placed after the rightmost existing node (group at x:-50 + width:800 = 750, +50 gap)
@@ -212,7 +212,7 @@ describe("canvasAddEdge", () => {
     expect(data.added).toBe(true);
 
     const content = JSON.parse(
-      fs.readFileSync(path.join(v.path, "board.canvas"), "utf-8"),
+      fs.readFileSync(path.join(v.vaultPath, "board.canvas"), "utf-8"),
     );
     expect(content.edges.length).toBe(2);
     const newEdge = content.edges[1];
@@ -249,7 +249,7 @@ describe("canvasRemoveNode", () => {
     expect(data.removed).toBe(true);
 
     const content = JSON.parse(
-      fs.readFileSync(path.join(v.path, "board.canvas"), "utf-8"),
+      fs.readFileSync(path.join(v.vaultPath, "board.canvas"), "utf-8"),
     );
     expect(content.nodes.length).toBe(2);
     expect(content.edges.length).toBe(0); // Edge connected to removed node also gone

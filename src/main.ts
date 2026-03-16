@@ -14,6 +14,7 @@ import {
   canvasRead,
   canvasRemoveNode,
 } from "./commands/canvas.js";
+import { configGet, configSet, configShow } from "./commands/config.js";
 import {
   append,
   create,
@@ -39,7 +40,6 @@ import {
   orphans,
   unresolvedLinks,
 } from "./commands/links.js";
-import { onboard } from "./commands/onboard.js";
 import { outline } from "./commands/outline.js";
 import { overview } from "./commands/overview.js";
 import {
@@ -66,55 +66,111 @@ const program = new Command();
 
 program
   .name("napkin")
-  .description("🧻 Obsidian-compatible CLI for agents")
+  .description(
+    "🧻 Knowledge system for AI agents. Local-first, file-based, progressively disclosed.",
+  )
   .version(`napkin ${version}`, "-v, --version")
   .option("--json", "Output as JSON")
   .option("-q, --quiet", "Suppress output")
   .option("--vault <path>", "Vault path (default: auto-detect from cwd)")
-  .option("--copy", "Copy output to clipboard");
-
-// ── Top-level commands ──────────────────────────────────────────────
-
-program
-  .command("version")
-  .description("Show version")
-  .action(async (_opts, cmd) => {
-    const root = cmd.optsWithGlobals();
-    if (root.json) {
-      console.log(JSON.stringify({ version }));
-    } else {
-      console.log(`napkin ${version}`);
-    }
+  .option("--copy", "Copy output to clipboard")
+  .showSuggestionAfterError(true)
+  .helpCommand(false)
+  .addHelpText("before", () => {
+    showHelp();
+    process.exit(0);
   });
+
+function showHelp() {
+  console.log(`Usage: napkin [options] [command]
+
+🧻 Knowledge system for AI agents. Local-first, file-based, progressively disclosed.
+
+Examples:
+  $ napkin init --template coding    Create a vault with coding structure
+  $ napkin overview                  See what's in the vault
+  $ napkin search "auth"             Find content about auth
+  $ napkin read "Architecture"       Read a specific file
+
+Workflow: init → overview → search → read
+
+Getting started:
+  init                 Initialize a new vault (--template, --list)
+  overview             Vault map with TF-IDF keywords per folder
+  vault                Show vault info (path, file count, size)
+  config               Vault configuration (show, get, set)
+
+Reading:
+  read <file>          Read a file
+  search <query>       Search vault (BM25 + backlinks + recency)
+
+Writing:
+  create               Create a new file (--name, --template)
+  append               Append content to a file
+  prepend              Prepend content after frontmatter
+  move, rename, delete File operations
+
+Subcommands:
+  file                 Files, folders, outline, wordcount
+  daily                Daily notes (today, read, append, prepend)
+  tag                  Tags and aliases
+  property             Frontmatter properties (list, set, remove, read)
+  task                 Tasks and checklists (list, show, toggle)
+  link                 Links and graph (out, back, orphans, deadends)
+  template             Note templates (list, read, insert)
+  base                 Database views over vault files
+  canvas               JSON Canvas operations
+  bookmark             Bookmarks
+
+Options:
+  --json               Output as JSON
+  -q, --quiet          Suppress output
+  --vault <path>       Vault path (default: auto-detect from cwd)
+  --copy               Copy output to clipboard
+  -v, --version        Show version
+  -h, --help           Show this help
+
+All commands support --json for structured output.
+More help: napkin <command> --help
+Docs: https://github.com/Michaelliv/napkin`);
+}
+
+// ── Getting started ─────────────────────────────────────────────────
 
 program
   .command("init")
   .description("Initialize a new vault")
   .option("--path <path>", "Directory to initialize (default: cwd)")
-  .option(
-    "--template <name>",
-    "Scaffold with template: coding, personal, research",
-  )
+  .option("--template <name>", "Scaffold with template (see init --list)")
+  .option("--list", "List available vault templates")
   .action(async (opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
-    await init(root);
+    if (root.list) {
+      await initTemplates(root);
+    } else {
+      await init(root);
+    }
   });
 
 program
-  .command("templates")
-  .description("List available vault templates")
-  .action(async (_opts, cmd) => {
-    const root = cmd.optsWithGlobals();
-    await initTemplates(root);
+  .command("overview")
+  .description("Vault map with keywords (Level 1 progressive disclosure)")
+  .option("--depth <n>", "Max folder depth")
+  .option("--keywords <n>", "Max keywords per folder")
+  .action(async (opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    await overview(root);
   });
 
 program
   .command("vault")
-  .description("Show vault info")
+  .description("Show vault info (path, file count, size)")
   .action(async (_opts, cmd) => {
     const root = cmd.optsWithGlobals();
     await vault(root);
   });
+
+// ── Reading ─────────────────────────────────────────────────────────
 
 program
   .command("read <file>")
@@ -123,6 +179,26 @@ program
     const root = cmd.optsWithGlobals();
     await read(fileRef, root);
   });
+
+program
+  .command("search [query...]")
+  .description("Search vault (ranked by BM25 + backlinks + recency)")
+  .option("--query <text>", "Search query")
+  .option("--path <folder>", "Limit to folder")
+  .option("--limit <n>", "Max results (default: 30)")
+  .option("--total", "Return match count")
+  .option("--snippet-lines <n>", "Context lines around matches (default: 0)")
+  .option("--no-snippets", "Return files only, no snippets")
+  .option("--score", "Include relevance score in output")
+  .action(async (queryWords, opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    if (queryWords.length && !root.query) {
+      root.query = queryWords.join(" ");
+    }
+    await search(root);
+  });
+
+// ── Writing ─────────────────────────────────────────────────────────
 
 program
   .command("create")
@@ -189,67 +265,11 @@ program
     await del(root);
   });
 
-program
-  .command("search [query...]")
-  .description("Search vault (ranked by BM25 + backlinks + recency)")
-  .option("--query <text>", "Search query")
-  .option("--path <folder>", "Limit to folder")
-  .option("--limit <n>", "Max results (default: 30)")
-  .option("--total", "Return match count")
-  .option("--snippet-lines <n>", "Context lines around matches (default: 1)")
-  .option("--no-snippets", "Return files only, no snippets")
-  .option("--score", "Include relevance score in output")
-  .action(async (queryWords, opts, cmd) => {
-    const root = { ...cmd.optsWithGlobals(), ...opts };
-    if (queryWords.length && !root.query) {
-      root.query = queryWords.join(" ");
-    }
-    await search(root);
-  });
-
-program
-  .command("outline")
-  .description("Show headings for a file")
-  .option("--file <name>", "File name")
-  .option("--format <type>", "Output format: tree, md, json")
-  .option("--total", "Return heading count")
-  .action(async (opts, cmd) => {
-    const root = { ...cmd.optsWithGlobals(), ...opts };
-    await outline(root);
-  });
-
-program
-  .command("wordcount")
-  .description("Count words and characters")
-  .option("--file <name>", "File name")
-  .option("--words", "Return word count only")
-  .option("--characters", "Return character count only")
-  .action(async (opts, cmd) => {
-    const root = { ...cmd.optsWithGlobals(), ...opts };
-    await wordcount(root);
-  });
-
-program
-  .command("onboard")
-  .description("Show agent instructions for CLAUDE.md/AGENTS.md")
-  .action(async (_opts, cmd) => {
-    const root = cmd.optsWithGlobals();
-    await onboard(root);
-  });
-
-program
-  .command("overview")
-  .description("Generate vault overview (Level 1 progressive disclosure)")
-  .option("--depth <n>", "Max folder depth (default: 3)")
-  .option("--keywords <n>", "Max keywords per folder (default: 8)")
-  .action(async (opts, cmd) => {
-    const root = { ...cmd.optsWithGlobals(), ...opts };
-    await overview(root);
-  });
-
 // ── file ────────────────────────────────────────────────────────────
 
-const fileCmd = program.command("file").description("Files and folders");
+const fileCmd = program
+  .command("file")
+  .description("Files, folders, and metadata");
 
 fileCmd
   .command("info [name]")
@@ -287,6 +307,28 @@ fileCmd
   .action(async (opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
     await folders(root);
+  });
+
+fileCmd
+  .command("outline")
+  .description("Show headings for a file")
+  .option("--file <name>", "File name")
+  .option("--format <type>", "Output format: tree, md, json")
+  .option("--total", "Return heading count")
+  .action(async (opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    await outline(root);
+  });
+
+fileCmd
+  .command("wordcount")
+  .description("Count words and characters")
+  .option("--file <name>", "File name")
+  .option("--words", "Return word count only")
+  .option("--characters", "Return character count only")
+  .action(async (opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    await wordcount(root);
   });
 
 // ── daily ───────────────────────────────────────────────────────────
@@ -516,7 +558,7 @@ linkCmd
 
 const baseCmd = program
   .command("base")
-  .description("Obsidian Bases (database views)");
+  .description("Bases (database views over vault files)");
 
 baseCmd
   .command("list")
@@ -651,11 +693,11 @@ canvasCmd
 
 // ── template ────────────────────────────────────────────────────────
 
-const tmplCmd = program.command("template").description("Templates");
+const tmplCmd = program.command("template").description("Note templates");
 
 tmplCmd
   .command("list")
-  .description("List templates")
+  .description("List note templates")
   .option("--total", "Return template count")
   .action(async (opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
@@ -709,6 +751,37 @@ bookmarkCmd
   .action(async (opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
     await bookmark(root);
+  });
+
+// ── config ──────────────────────────────────────────────────────────
+
+const configCmd = program.command("config").description("Vault configuration");
+
+configCmd
+  .command("show")
+  .description("Show current config")
+  .action(async (_opts, cmd) => {
+    const root = cmd.optsWithGlobals();
+    await configShow(root);
+  });
+
+configCmd
+  .command("get")
+  .description("Get a config value")
+  .option("--key <path>", "Config key (dot notation, e.g. search.limit)")
+  .action(async (opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    await configGet(root);
+  });
+
+configCmd
+  .command("set")
+  .description("Set a config value")
+  .option("--key <path>", "Config key (dot notation, e.g. search.limit)")
+  .option("--value <value>", "Value to set (JSON or string)")
+  .action(async (opts, cmd) => {
+    const root = { ...cmd.optsWithGlobals(), ...opts };
+    await configSet(root);
   });
 
 // ── copy support ────────────────────────────────────────────────────

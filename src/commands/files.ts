@@ -7,11 +7,13 @@ import {
   listFiles,
   listFolders,
   resolveFile,
+  suggestFile,
 } from "../utils/files.js";
 import {
   bold,
   dim,
   error,
+  fileNotFound,
   type OutputOptions,
   output,
 } from "../utils/output.js";
@@ -28,7 +30,7 @@ export async function file(
   }
   const resolved = resolveFile(v.path, fileRef);
   if (!resolved) {
-    error(`File not found: ${fileRef}`);
+    fileNotFound(fileRef, suggestFile(v.path, fileRef));
     process.exit(EXIT_NOT_FOUND);
   }
   const info = getFileInfo(v.path, resolved);
@@ -153,7 +155,7 @@ export async function open(
   if (fileRef) {
     const resolved = resolveFile(v.path, fileRef);
     if (!resolved) {
-      error(`File not found: ${fileRef}`);
+      fileNotFound(fileRef, suggestFile(v.path, fileRef));
       process.exit(EXIT_NOT_FOUND);
     }
     const encodedFile = encodeURIComponent(resolved.replace(/\.md$/, ""));

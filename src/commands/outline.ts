@@ -1,9 +1,14 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { resolveFile } from "../utils/files.js";
+import { resolveFile, suggestFile } from "../utils/files.js";
 import { extractHeadings } from "../utils/markdown.js";
-import { error, type OutputOptions, output } from "../utils/output.js";
+import {
+  error,
+  fileNotFound,
+  type OutputOptions,
+  output,
+} from "../utils/output.js";
 import { findVault } from "../utils/vault.js";
 
 export async function outline(
@@ -22,7 +27,7 @@ export async function outline(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 

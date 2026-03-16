@@ -7,8 +7,9 @@ export interface VaultInfo {
 }
 
 /**
- * Walk up from startDir looking for .napkin/ or .obsidian/ folder.
- * Returns vault name and absolute path, or throws if not found.
+ * Walk up from startDir looking for .napkin/ folder.
+ * The .napkin/ directory IS the vault root — all content lives inside it.
+ * Returns vault name (parent dir name) and the .napkin/ path.
  */
 export function findVault(startDir?: string): VaultInfo {
   let dir = path.resolve(startDir || process.cwd());
@@ -16,26 +17,18 @@ export function findVault(startDir?: string): VaultInfo {
 
   while (true) {
     const napkinDir = path.join(dir, ".napkin");
-    const obsidianDir = path.join(dir, ".obsidian");
 
-    // Prefer .napkin/, fall back to .obsidian/
     if (fs.existsSync(napkinDir) && fs.statSync(napkinDir).isDirectory()) {
       return {
         name: path.basename(dir),
-        path: dir,
-      };
-    }
-    if (fs.existsSync(obsidianDir) && fs.statSync(obsidianDir).isDirectory()) {
-      return {
-        name: path.basename(dir),
-        path: dir,
+        path: napkinDir,
       };
     }
 
     const parent = path.dirname(dir);
     if (parent === dir || dir === root) {
       throw new Error(
-        "No vault found. Run 'napkin init' to create one, or run this command inside a vault directory (containing .napkin/ or .obsidian/).",
+        "No vault found. Run 'napkin init' to create one, or run this command inside a directory containing .napkin/.",
       );
     }
     dir = parent;
@@ -50,6 +43,7 @@ export function getVaultConfig(
   vaultPath: string,
   configFile: string,
 ): Record<string, unknown> | null {
+  // .obsidian/ lives inside .napkin/ (the vault root)
   const configPath = path.join(vaultPath, ".obsidian", configFile);
   try {
     const content = fs.readFileSync(configPath, "utf-8");

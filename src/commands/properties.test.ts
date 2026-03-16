@@ -9,7 +9,7 @@ import {
   propertySet,
 } from "./properties.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -80,7 +80,10 @@ describe("propertySet", () => {
         value: "high",
       }),
     );
-    const content = fs.readFileSync(path.join(v.path, "note1.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "note1.md"),
+      "utf-8",
+    );
     expect(content).toContain("priority: high");
   });
 });
@@ -95,7 +98,10 @@ describe("propertyRemove", () => {
         name: "status",
       }),
     );
-    const content = fs.readFileSync(path.join(v.path, "note1.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "note1.md"),
+      "utf-8",
+    );
     expect(content).not.toContain("status");
     expect(content).toContain("title: Alpha");
   });

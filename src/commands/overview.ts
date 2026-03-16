@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { loadConfig } from "../utils/config.js";
 import { listFiles } from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
 import { extractHeadings, extractTags } from "../utils/markdown.js";
@@ -350,8 +351,13 @@ export async function overview(
   },
 ) {
   const v = findVault(opts.vault);
-  const maxDepth = opts.depth ? Number.parseInt(opts.depth, 10) : 3;
-  const maxKeywords = opts.keywords ? Number.parseInt(opts.keywords, 10) : 8;
+  const config = loadConfig(v.path);
+  const maxDepth = opts.depth
+    ? Number.parseInt(opts.depth, 10)
+    : config.overview.depth;
+  const maxKeywords = opts.keywords
+    ? Number.parseInt(opts.keywords, 10)
+    : config.overview.keywords;
 
   const folders = buildOverview(v.path, maxDepth, maxKeywords);
 

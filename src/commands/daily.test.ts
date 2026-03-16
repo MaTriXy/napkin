@@ -10,7 +10,7 @@ import {
   getDailyPath,
 } from "./daily.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -40,12 +40,12 @@ afterEach(() => {
 
 describe("getDailyPath", () => {
   test("returns path based on config", () => {
-    const dp = getDailyPath(v.path);
+    const dp = getDailyPath(v.vaultPath);
     expect(dp).toBe(`Inbox/Daily/${todayStr()}.md`);
   });
 
   test("formats custom date", () => {
-    const dp = getDailyPath(v.path, new Date(2026, 0, 15));
+    const dp = getDailyPath(v.vaultPath, new Date(2026, 0, 15));
     expect(dp).toBe("Inbox/Daily/2026-01-15.md");
   });
 });
@@ -74,7 +74,7 @@ describe("dailyAppend", () => {
       dailyAppend({ json: true, vault: v.path, content: "- [ ] New task" }),
     );
     const content = fs.readFileSync(
-      path.join(v.path, `Inbox/Daily/${todayStr()}.md`),
+      path.join(v.vaultPath, `Inbox/Daily/${todayStr()}.md`),
       "utf-8",
     );
     expect(content).toContain("New task");
@@ -82,12 +82,12 @@ describe("dailyAppend", () => {
 
   test("creates daily note if missing then appends", async () => {
     // Remove existing daily
-    fs.unlinkSync(path.join(v.path, `Inbox/Daily/${todayStr()}.md`));
+    fs.unlinkSync(path.join(v.vaultPath, `Inbox/Daily/${todayStr()}.md`));
     await captureJson(() =>
       dailyAppend({ json: true, vault: v.path, content: "First entry" }),
     );
     const content = fs.readFileSync(
-      path.join(v.path, `Inbox/Daily/${todayStr()}.md`),
+      path.join(v.vaultPath, `Inbox/Daily/${todayStr()}.md`),
       "utf-8",
     );
     expect(content).toContain("First entry");
@@ -100,7 +100,7 @@ describe("dailyPrepend", () => {
       dailyPrepend({ json: true, vault: v.path, content: "Top line" }),
     );
     const content = fs.readFileSync(
-      path.join(v.path, `Inbox/Daily/${todayStr()}.md`),
+      path.join(v.vaultPath, `Inbox/Daily/${todayStr()}.md`),
       "utf-8",
     );
     const topIdx = content.indexOf("Top line");

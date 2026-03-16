@@ -1,15 +1,20 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { loadConfig } from "../utils/config.js";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { listFiles, resolveFile } from "../utils/files.js";
-import { error, type OutputOptions, output, success } from "../utils/output.js";
-import { findVault, getVaultConfig } from "../utils/vault.js";
+import { listFiles, resolveFile, suggestFile } from "../utils/files.js";
+import {
+  error,
+  fileNotFound,
+  type OutputOptions,
+  output,
+  success,
+} from "../utils/output.js";
+import { findVault } from "../utils/vault.js";
 
 function getTemplateFolder(vaultPath: string): string {
-  const config = getVaultConfig(vaultPath, "templates.json") as {
-    folder?: string;
-  } | null;
-  return config?.folder || "Templates";
+  const config = loadConfig(vaultPath);
+  return config.templates.folder;
 }
 
 export async function templates(
@@ -49,7 +54,10 @@ export async function templateRead(
     resolveFile(v.path, `${folder}/${opts.name}`) ||
     resolveFile(v.path, opts.name);
   if (!resolved) {
-    error(`Template not found: ${opts.name}`);
+    const templateFiles = listFiles(v.path, { folder, ext: "md" }).map((f) =>
+      path.basename(f, ".md"),
+    );
+    fileNotFound(opts.name, templateFiles.slice(0, 3));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -93,13 +101,16 @@ export async function templateInsert(
     resolveFile(v.path, `${folder}/${opts.name}`) ||
     resolveFile(v.path, opts.name);
   if (!templateResolved) {
-    error(`Template not found: ${opts.name}`);
+    const templateFiles = listFiles(v.path, { folder, ext: "md" }).map((f) =>
+      path.basename(f, ".md"),
+    );
+    fileNotFound(opts.name, templateFiles.slice(0, 3));
     process.exit(EXIT_NOT_FOUND);
   }
 
   const targetResolved = resolveFile(v.path, opts.file);
   if (!targetResolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 

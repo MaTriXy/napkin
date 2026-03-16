@@ -1,12 +1,13 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { listFiles, resolveFile } from "../utils/files.js";
+import { listFiles, resolveFile, suggestFile } from "../utils/files.js";
 import { extractTasks, type Task } from "../utils/markdown.js";
 import {
   bold,
   dim,
   error,
+  fileNotFound,
   type OutputOptions,
   output,
 } from "../utils/output.js";
@@ -115,7 +116,7 @@ export async function task(
     }
     const resolved = resolveFile(v.path, parts[0]);
     if (!resolved) {
-      error(`File not found: ${parts[0]}`);
+      fileNotFound(parts[0], suggestFile(v.path, parts[0]));
       process.exit(EXIT_NOT_FOUND);
     }
     filePath = resolved;
@@ -130,7 +131,7 @@ export async function task(
     }
     const resolved = resolveFile(v.path, opts.file);
     if (!resolved) {
-      error(`File not found: ${opts.file}`);
+      fileNotFound(opts.file, suggestFile(v.path, opts.file));
       process.exit(EXIT_NOT_FOUND);
     }
     filePath = resolved;
@@ -139,7 +140,7 @@ export async function task(
 
   const fullPath = path.join(v.path, filePath);
   if (!fs.existsSync(fullPath)) {
-    error(`File not found: ${filePath}`);
+    fileNotFound(filePath, suggestFile(v.path, filePath));
     process.exit(EXIT_NOT_FOUND);
   }
 

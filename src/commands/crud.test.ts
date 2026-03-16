@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { createTempVault } from "../utils/test-helpers.js";
 import { append, create, del, move, prepend, read, rename } from "./crud.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -44,7 +44,10 @@ describe("create", () => {
       create({ json: true, vault: v.path, name: "New Note", content: "Hello" }),
     );
     expect(data.created).toBe(true);
-    const content = fs.readFileSync(path.join(v.path, "New Note.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "New Note.md"),
+      "utf-8",
+    );
     expect(content).toBe("Hello");
   });
 
@@ -58,7 +61,10 @@ describe("create", () => {
       }),
     );
     expect(data.created).toBe(true);
-    const content = fs.readFileSync(path.join(v.path, "Today.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "Today.md"),
+      "utf-8",
+    );
     expect(content).toContain("{{date}}");
   });
 
@@ -72,7 +78,7 @@ describe("create", () => {
       }),
     );
     const content = fs.readFileSync(
-      path.join(v.path, "Archive/old-note.md"),
+      path.join(v.vaultPath, "Archive/old-note.md"),
       "utf-8",
     );
     expect(content).toBe("archived");
@@ -89,7 +95,10 @@ describe("append", () => {
         content: "New line",
       }),
     );
-    const content = fs.readFileSync(path.join(v.path, "README.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "README.md"),
+      "utf-8",
+    );
     expect(content).toContain("Welcome\nNew line");
   });
 
@@ -103,7 +112,10 @@ describe("append", () => {
         inline: true,
       }),
     );
-    const content = fs.readFileSync(path.join(v.path, "README.md"), "utf-8");
+    const content = fs.readFileSync(
+      path.join(v.vaultPath, "README.md"),
+      "utf-8",
+    );
     expect(content).toContain("Welcome extra");
   });
 });
@@ -119,7 +131,7 @@ describe("prepend", () => {
       }),
     );
     const content = fs.readFileSync(
-      path.join(v.path, "Projects/note.md"),
+      path.join(v.vaultPath, "Projects/note.md"),
       "utf-8",
     );
     expect(content).toContain("title: Note");
@@ -135,8 +147,10 @@ describe("move", () => {
     await captureJson(() =>
       move({ json: true, vault: v.path, file: "README", to: "Archive" }),
     );
-    expect(fs.existsSync(path.join(v.path, "README.md"))).toBe(false);
-    expect(fs.existsSync(path.join(v.path, "Archive/README.md"))).toBe(true);
+    expect(fs.existsSync(path.join(v.vaultPath, "README.md"))).toBe(false);
+    expect(fs.existsSync(path.join(v.vaultPath, "Archive/README.md"))).toBe(
+      true,
+    );
   });
 });
 
@@ -145,23 +159,27 @@ describe("rename", () => {
     await captureJson(() =>
       rename({ json: true, vault: v.path, file: "README", name: "INDEX" }),
     );
-    expect(fs.existsSync(path.join(v.path, "README.md"))).toBe(false);
-    expect(fs.existsSync(path.join(v.path, "INDEX.md"))).toBe(true);
+    expect(fs.existsSync(path.join(v.vaultPath, "README.md"))).toBe(false);
+    expect(fs.existsSync(path.join(v.vaultPath, "INDEX.md"))).toBe(true);
   });
 });
 
 describe("delete", () => {
   test("moves file to .trash by default", async () => {
     await captureJson(() => del({ json: true, vault: v.path, file: "README" }));
-    expect(fs.existsSync(path.join(v.path, "README.md"))).toBe(false);
-    expect(fs.existsSync(path.join(v.path, ".trash/README.md"))).toBe(true);
+    expect(fs.existsSync(path.join(v.vaultPath, "README.md"))).toBe(false);
+    expect(fs.existsSync(path.join(v.vaultPath, ".trash/README.md"))).toBe(
+      true,
+    );
   });
 
   test("permanently deletes with --permanent", async () => {
     await captureJson(() =>
       del({ json: true, vault: v.path, file: "README", permanent: true }),
     );
-    expect(fs.existsSync(path.join(v.path, "README.md"))).toBe(false);
-    expect(fs.existsSync(path.join(v.path, ".trash/README.md"))).toBe(false);
+    expect(fs.existsSync(path.join(v.vaultPath, "README.md"))).toBe(false);
+    expect(fs.existsSync(path.join(v.vaultPath, ".trash/README.md"))).toBe(
+      false,
+    );
   });
 });

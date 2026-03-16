@@ -1,13 +1,19 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { EXIT_NOT_FOUND, EXIT_USER_ERROR } from "../utils/exit-codes.js";
-import { listFiles, resolveFile } from "../utils/files.js";
+import { listFiles, resolveFile, suggestFile } from "../utils/files.js";
 import {
   parseFrontmatter,
   removeProperty as removeProp,
   setProperty as setProp,
 } from "../utils/frontmatter.js";
-import { error, type OutputOptions, output, success } from "../utils/output.js";
+import {
+  error,
+  fileNotFound,
+  type OutputOptions,
+  output,
+  success,
+} from "../utils/output.js";
 import { findVault } from "../utils/vault.js";
 
 function collectProperties(
@@ -91,7 +97,7 @@ export async function propertySet(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -129,7 +135,7 @@ export async function propertyRemove(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -159,7 +165,7 @@ export async function propertyRead(
 
   const resolved = resolveFile(v.path, opts.file);
   if (!resolved) {
-    error(`File not found: ${opts.file}`);
+    fileNotFound(opts.file, suggestFile(v.path, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 

@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { createTempVault } from "../utils/test-helpers.js";
 import { bookmark, bookmarks } from "./bookmarks.js";
 
-let v: { path: string; cleanup: () => void };
+let v: { path: string; vaultPath: string; cleanup: () => void };
 
 async function captureJson(
   fn: () => Promise<void>,
@@ -21,7 +21,7 @@ beforeEach(() => {
   v = createTempVault({});
   // Write initial bookmarks
   fs.writeFileSync(
-    path.join(v.path, ".obsidian", "bookmarks.json"),
+    path.join(v.vaultPath, ".obsidian", "bookmarks.json"),
     JSON.stringify([
       { type: "file", path: "note.md", title: "My Note" },
       { type: "search", query: "TODO" },
@@ -52,7 +52,7 @@ describe("bookmarks", () => {
   });
 
   test("returns empty when no bookmarks file", async () => {
-    fs.unlinkSync(path.join(v.path, ".obsidian", "bookmarks.json"));
+    fs.unlinkSync(path.join(v.vaultPath, ".obsidian", "bookmarks.json"));
     const data = await captureJson(() =>
       bookmarks({ json: true, vault: v.path }),
     );
@@ -66,7 +66,7 @@ describe("bookmark", () => {
       bookmark({ json: true, vault: v.path, file: "new.md", title: "New" }),
     );
     const raw = fs.readFileSync(
-      path.join(v.path, ".obsidian", "bookmarks.json"),
+      path.join(v.vaultPath, ".obsidian", "bookmarks.json"),
       "utf-8",
     );
     const items = JSON.parse(raw);
@@ -80,7 +80,7 @@ describe("bookmark", () => {
       bookmark({ json: true, vault: v.path, search: "FIXME" }),
     );
     const raw = fs.readFileSync(
-      path.join(v.path, ".obsidian", "bookmarks.json"),
+      path.join(v.vaultPath, ".obsidian", "bookmarks.json"),
       "utf-8",
     );
     const items = JSON.parse(raw);
@@ -93,7 +93,7 @@ describe("bookmark", () => {
       bookmark({ json: true, vault: v.path, url: "https://example.com" }),
     );
     const raw = fs.readFileSync(
-      path.join(v.path, ".obsidian", "bookmarks.json"),
+      path.join(v.vaultPath, ".obsidian", "bookmarks.json"),
       "utf-8",
     );
     const items = JSON.parse(raw);
