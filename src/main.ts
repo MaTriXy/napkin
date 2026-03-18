@@ -107,10 +107,12 @@ Reading:
   search <query>       Search vault (BM25 + backlinks + recency)
 
 Writing:
-  create               Create a new file (--name, --template)
-  append               Append content to a file
-  prepend              Prepend content after frontmatter
-  move, rename, delete File operations
+  create <name>        Create a new file (--template, --content)
+  append <file>        Append content to a file
+  prepend <file>       Prepend content after frontmatter
+  move <file> <to>     Move a file
+  rename <file> <name> Rename a file
+  delete <file>        Delete a file
 
 Subcommands:
   file                 Files, folders, outline, wordcount
@@ -211,67 +213,81 @@ program
 // ── Writing ─────────────────────────────────────────────────────────
 
 program
-  .command("create")
+  .command("create [name] [content]")
   .description("Create a new file")
-  .option("--name <name>", "File name")
+  .option("--name <name>", "File name (alternative to positional)")
   .option("--path <path>", "File path from vault root")
-  .option("--content <text>", "Initial content")
+  .option("--content <text>", "Initial content (alternative to positional)")
   .option("--template <name>", "Template to use")
   .option("--overwrite", "Overwrite if file exists")
-  .action(async (opts, cmd) => {
+  .action(async (name, content, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.name = root.name || name;
+    root.content = root.content || content;
     await create(root);
   });
 
 program
-  .command("append")
+  .command("append [file] [content]")
   .description("Append content to a file")
-  .option("--file <name>", "Target file")
-  .option("--content <text>", "Content to append")
+  .option("--file <name>", "Target file (alternative to positional)")
+  .option("--content <text>", "Content to append (alternative to positional)")
   .option("--inline", "Append without newline")
-  .action(async (opts, cmd) => {
+  .action(async (file, content, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
+    root.content = root.content || content;
     await append(root);
   });
 
 program
-  .command("prepend")
+  .command("prepend [file] [content]")
   .description("Prepend content after frontmatter")
-  .option("--file <name>", "Target file")
-  .option("--content <text>", "Content to prepend")
+  .option("--file <name>", "Target file (alternative to positional)")
+  .option("--content <text>", "Content to prepend (alternative to positional)")
   .option("--inline", "Prepend without newline")
-  .action(async (opts, cmd) => {
+  .action(async (file, content, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
+    root.content = root.content || content;
     await prepend(root);
   });
 
 program
-  .command("move")
+  .command("move [file] [to]")
   .description("Move a file")
-  .option("--file <name>", "File to move")
-  .option("--to <path>", "Destination folder or path")
-  .action(async (opts, cmd) => {
+  .option("--file <name>", "File to move (alternative to positional)")
+  .option(
+    "--to <path>",
+    "Destination folder or path (alternative to positional)",
+  )
+  .action(async (file, to, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
+    root.to = root.to || to;
     await move(root);
   });
 
 program
-  .command("rename")
+  .command("rename [file] [name]")
   .description("Rename a file")
-  .option("--file <name>", "File to rename")
-  .option("--name <name>", "New file name")
-  .action(async (opts, cmd) => {
+  .option("--file <name>", "File to rename (alternative to positional)")
+  .option("--name <name>", "New file name (alternative to positional)")
+  .action(async (file, name, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
+    root.name = root.name || name;
     await rename(root);
   });
 
 program
-  .command("delete")
+  .command("delete [file]")
   .description("Delete a file")
-  .option("--file <name>", "File to delete")
+  .option("--file <name>", "File to delete (alternative to positional)")
   .option("--permanent", "Skip trash, delete permanently")
-  .action(async (opts, cmd) => {
+  .action(async (file, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
     await del(root);
   });
 
@@ -320,24 +336,26 @@ fileCmd
   });
 
 fileCmd
-  .command("outline")
+  .command("outline [file]")
   .description("Show headings for a file")
-  .option("--file <name>", "File name")
+  .option("--file <name>", "File name (alternative to positional)")
   .option("--format <type>", "Output format: tree, md, json")
   .option("--total", "Return heading count")
-  .action(async (opts, cmd) => {
+  .action(async (file, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
     await outline(root);
   });
 
 fileCmd
-  .command("wordcount")
+  .command("wordcount [file]")
   .description("Count words and characters")
-  .option("--file <name>", "File name")
+  .option("--file <name>", "File name (alternative to positional)")
   .option("--words", "Return word count only")
   .option("--characters", "Return character count only")
-  .action(async (opts, cmd) => {
+  .action(async (file, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.file = root.file || file;
     await wordcount(root);
   });
 
@@ -370,22 +388,24 @@ dailyCmd
   });
 
 dailyCmd
-  .command("append")
+  .command("append [content]")
   .description("Append to daily note")
-  .option("--content <text>", "Content to append")
+  .option("--content <text>", "Content to append (alternative to positional)")
   .option("--inline", "Append without newline")
-  .action(async (opts, cmd) => {
+  .action(async (content, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.content = root.content || content;
     await dailyAppend(root);
   });
 
 dailyCmd
-  .command("prepend")
+  .command("prepend [content]")
   .description("Prepend to daily note")
-  .option("--content <text>", "Content to prepend")
+  .option("--content <text>", "Content to prepend (alternative to positional)")
   .option("--inline", "Prepend without newline")
-  .action(async (opts, cmd) => {
+  .action(async (content, opts, cmd) => {
     const root = { ...cmd.optsWithGlobals(), ...opts };
+    root.content = root.content || content;
     await dailyPrepend(root);
   });
 

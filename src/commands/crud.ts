@@ -93,6 +93,16 @@ export async function create(
   });
 }
 
+async function readStdin(): Promise<string | undefined> {
+  if (process.stdin.isTTY) return undefined;
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  const result = Buffer.concat(chunks).toString("utf-8").trimEnd();
+  return result || undefined;
+}
+
 export async function append(
   opts: OutputOptions & {
     vault?: string;
@@ -103,11 +113,14 @@ export async function append(
 ) {
   const v = findVault(opts.vault);
   if (!opts.file) {
-    error("No file specified. Use --file <name>");
+    error("No file specified. Use: napkin append <file> [content]");
     process.exit(EXIT_USER_ERROR);
   }
   if (!opts.content) {
-    error("No content specified. Use --content <text>");
+    opts.content = await readStdin();
+  }
+  if (!opts.content) {
+    error("No content specified. Use: napkin append <file> <content>");
     process.exit(EXIT_USER_ERROR);
   }
 
@@ -138,11 +151,14 @@ export async function prepend(
 ) {
   const v = findVault(opts.vault);
   if (!opts.file) {
-    error("No file specified. Use --file <name>");
+    error("No file specified. Use: napkin prepend <file> [content]");
     process.exit(EXIT_USER_ERROR);
   }
   if (!opts.content) {
-    error("No content specified. Use --content <text>");
+    opts.content = await readStdin();
+  }
+  if (!opts.content) {
+    error("No content specified. Use: napkin prepend <file> <content>");
     process.exit(EXIT_USER_ERROR);
   }
 
