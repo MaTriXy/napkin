@@ -1,123 +1,97 @@
-# LongMemEval Benchmark
+# Benchmarks
 
-Agentic memory evaluation using napkin + pi CLI. Tests the ability of an AI agent to retrieve and reason over long user-assistant chat histories stored as napkin vault notes.
+Agentic retrieval benchmarks for pi + napkin. Each benchmark creates a temporary napkin vault, runs pi with the napkin-context extension, and measures retrieval accuracy and answer quality.
 
-Paper: [Wu et al., LongMemEval (ICLR 2025)](https://arxiv.org/abs/2410.10813) — 500 questions across 5 memory abilities.
+## LongMemEval
 
-## Results (Sonnet, n=100)
+[LongMemEval](https://arxiv.org/abs/2410.10813) (ICLR 2025) tests long-term memory of chat assistants across 500 questions and five core abilities: information extraction, multi-session reasoning, knowledge updates, temporal reasoning, and abstention.
 
-| Dataset | Sessions/question | Accuracy | vs SOTA |
-|---------|:-----------------:|:--------:|:-------:|
-| Oracle | 1–6 (evidence only) | **92.0%** | ≈ GPT-4o+CoN (92.4%) |
-| S | ~40–60 (~115k tokens) | **91.0%** | **+5pp** vs Emergence (86%) |
-| M | ~480 (~1.5M tokens) | **83.0%** | **+11pp** vs GPT-4o RAG (72%) |
+Three dataset sizes:
 
-The harder the retrieval, the bigger the advantage. On M, no model can context-stuff — napkin's search-based retrieval dominates.
+| Dataset | Sessions/question | Tokens | Tests |
+|---------|-------------------|--------|-------|
+| Oracle | 1–6 | ~5k | Reading comprehension |
+| S | ~40–60 | ~115k | Retrieval + reading |
+| M | ~500 | ~1.5M | Retrieval at scale |
 
-## Setup
+### Results
+
+**pi + napkin (Sonnet, 100 questions each):**
+
+| Dataset | pi + napkin | Best prior system | Paper baseline (GPT-4o) |
+|---------|-----------|-------------------|------------------------|
+| Oracle | **92.0%** | 92.4% (GPT-4o+CoN) | 92.4% |
+| S | **91.0%** | 86% (Emergence AI) | 64% (full context) |
+| M | **83.0%** | 72% (GPT-4o RAG) | 72% |
+
+Zero preprocessing — no embeddings, no graph construction, no summary extraction. Just BM25 search on per-round markdown notes.
+
+Per-ability breakdown (S dataset, Sonnet):
+
+| Ability | Accuracy |
+|---------|----------|
+| Information Extraction | 97.1% |
+| Multi-Session Reasoning | 88.9% |
+| Knowledge Updates | 100% |
+| Temporal Reasoning | 90.3% |
+| Abstention | 50.0% |
+
+### How it works
+
+1. Each question's chat history is split into **per-round notes** (one user message + following assistant responses per note)
+2. Notes are organized in **day directories** (e.g., `2023-05-20/round-1.md`) so napkin's overview shows per-day keywords
+3. File modification times are set from session timestamps for accurate recency ranking
+4. The agent uses `napkin search` and `napkin read` to find and read relevant notes
+5. An LLM judge (matching the paper's methodology) scores the answer
+
+### Usage
 
 ```bash
-# Install deps
-bun install
-
-# Download datasets (auto-downloads on first run for oracle/S)
-# For M dataset (2.6GB), convert to JSONL first:
-cd bench/data
-wget https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_m_cleaned.json
-python3 -c "
-import json
-data = json.load(open('longmemeval_m_cleaned.json'))
-with open('longmemeval_m_cleaned.jsonl', 'w') as f:
-    for d in data:
-        f.write(json.dumps(d) + '\n')
-"
-# Pre-extract sample for M
-python3 -c "
-import json, random
-random.seed(42)
-with open('longmemeval_m_cleaned.jsonl') as f:
-    data = [json.loads(l) for l in f]
-random.shuffle(data)
-json.dump(data[:100], open('longmemeval_m_cleaned_sample100.json', 'w'))
-"
-```
-
-## Running
-
-```bash
-# Oracle dataset (evidence sessions only) — downloads automatically
+# Oracle (smallest, downloads ~5MB)
 npx tsx bench/longmemeval-eval.ts
 
-# S dataset (~40 sessions per question)
-npx tsx bench/longmemeval-eval.ts --dataset s --n 100
+# LongMemEval_S (~40 sessions per question, downloads ~50MB)
+npx tsx bench/longmemeval-eval.ts --dataset s
 
-# M dataset (~480 sessions per question) — requires pre-extracted sample
+# LongMemEval_M (~500 sessions, downloads ~2.6GB)
+# Pre-extract a sample first:
+python3 -c "import json,random; random.seed(42); d=json.load(open('bench/data/longmemeval_m_cleaned.json')); random.shuffle(d); json.dump(d[:100], open('bench/data/longmemeval_m_cleaned_sample100.json','w'))"
 npx tsx bench/longmemeval-eval.ts --dataset m --n 100
 
-# Choose model
+# Common options
+npx tsx bench/longmemeval-eval.ts --n 50                    # Limit questions
+npx tsx bench/longmemeval-eval.ts --verbose                 # Show per-question results
+npx tsx bench/longmemeval-eval.ts --json                    # Save full results JSON
+npx tsx bench/longmemeval-eval.ts --concurrency 10          # Parallel questions
 npx tsx bench/longmemeval-eval.ts --model "anthropic/claude-sonnet-4-20250514"
-npx tsx bench/longmemeval-eval.ts --model "anthropic/claude-haiku-4-5-20251001"
-
-# Specific questions (for debugging)
-npx tsx bench/longmemeval-eval.ts --ids "id1,id2,id3" --verbose
-
-# Save full results JSON
-npx tsx bench/longmemeval-eval.ts --json
+npx tsx bench/longmemeval-eval.ts --ids "id1,id2,id3"       # Run specific questions
+npx tsx bench/longmemeval-eval.ts --seed 123                # Reproducible sampling
 ```
 
-## How it works
-
-### Vault structure
-
-Each question's haystack sessions are converted into a napkin vault. Sessions are split into **per-round notes** — one note per user+assistant exchange, grouped by day:
-
-```
-.napkin/
-  NAPKIN.md               # Overview: N notes across K days
-  2023-05-20/
-    round-1.md            # User message + assistant response
-    round-2.md
-    ...
-  2023-05-21/
-    round-1.md
-    ...
-```
-
-Each note's mtime is set from the session timestamp so napkin's recency ranking is accurate.
-
-Per-round notes were critical for accuracy (+6pp on S vs full sessions). Smaller notes give better BM25 signal, better per-day keywords in overview, and less noise for the agent to read through.
-
-### Agent workflow
-
-The agent (pi CLI) uses the napkin-context extension which injects the vault overview. It then:
-1. Sees per-day keyword clusters in the overview
-2. Runs `napkin search` to find relevant rounds
-3. Runs `napkin read` to read specific notes
-4. Reasons over the extracted facts to answer
-
-### Scoring
-
-LLM-as-judge matching the paper's `evaluate_qa.py` methodology. Type-aware prompts:
-- Preference questions: rubric-based
-- Abstention: checks for correct refusal
-- Temporal: allows off-by-one errors
+Data is downloaded automatically from HuggingFace on first run (except M which needs pre-extraction due to its 2.6GB size).
 
 ### Key design decisions
 
-- **Per-round vault** — splits sessions into individual exchanges. Full sessions are 10-15k chars; rounds are 300-2500 chars. Better BM25, better overview keywords.
-- **Full assistant response** — critical for questions referencing what the assistant said. User-only vault failed on 7/11 assistant-recall questions.
-- **`--system-prompt` not `--append-system-prompt`** — pi injects the real date (2026) which conflicts with question dates (2023). Using `--system-prompt` prevents this and fixed all temporal reasoning failures.
-- **Day directories** — per-day TF-IDF keywords let the agent narrow by time period from the overview alone.
-- **appendFileSync** — sync writes prevent data loss if killed mid-run.
+- **Per-round notes** instead of full sessions: each note is ~2.5k chars instead of ~15k, giving BM25 search better granularity
+- **Day directories**: napkin's overview extracts TF-IDF keywords per directory, giving the agent a topical map of the vault
+- **Full assistant responses included**: many questions ask about what the assistant said previously — truncating assistant content drops answers
+- **Scenario date in system prompt**: prevents the model from using its real current date for relative time calculations ("X days ago")
+- **`--system-prompt` instead of `--append-system-prompt`**: avoids pi injecting a conflicting real date
 
-## Prompt
+## HotpotQA
 
-The agent prompt lives in `bench/longmemeval-prompt.md` and is loaded at runtime. Edit it to experiment with different instructions. The file has two sections separated by `---SPLIT---`: SYSTEM_PROMPT and USER_PROMPT. Variables `{{vault_path}}`, `{{question_date}}`, and `{{question}}` are filled per question.
+Multi-hop question answering. 10 context paragraphs (2 gold, 8 distractors) per question. Tests whether the agent can find and chain information across notes.
 
-## Output
+```bash
+npx tsx bench/hotpotqa-eval.ts
+npx tsx bench/hotpotqa-eval.ts --n 100 --verbose
+```
 
-Results are saved to `bench/results/`:
-- `longmemeval-<dataset>-<timestamp>.jsonl` — one line per question, written incrementally
-- `longmemeval-<dataset>-<timestamp>.json` — full results with summary (with `--json`)
+## LoCoMo
 
-Each result includes: `accuracy`, `sessionRecall`, `toolCalls`, `searchCalls`, `readCalls`, `inputTokens`, `outputTokens`, `elapsed`.
+Long-term conversational memory. 10 conversations split into sessions, 699 questions across single-hop, multi-hop, and temporal reasoning.
+
+```bash
+npx tsx bench/locomo-eval.ts
+npx tsx bench/locomo-eval.ts --sample 0 --verbose
+```
