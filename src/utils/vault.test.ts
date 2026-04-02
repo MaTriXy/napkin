@@ -18,14 +18,14 @@ afterEach(() => {
 describe("findVault", () => {
   test("finds vault from project root", () => {
     const result = findVault(vault.path);
-    expect(result.path).toBe(path.join(vault.path, ".napkin"));
+    expect(result.configPath).toBe(path.join(vault.path, ".napkin"));
   });
 
   test("finds vault from subdirectory", () => {
     const sub = path.join(vault.path, "some", "nested", "dir");
     fs.mkdirSync(sub, { recursive: true });
     const result = findVault(sub);
-    expect(result.path).toBe(path.join(vault.path, ".napkin"));
+    expect(result.configPath).toBe(path.join(vault.path, ".napkin"));
   });
 
   test("throws when no vault found", () => {
@@ -37,24 +37,125 @@ describe("findVault", () => {
     fs.mkdirSync(path.join(tmpDir, ".napkin"));
     try {
       const result = findVault(tmpDir);
-      expect(result.path).toBe(path.join(tmpDir, ".napkin"));
+      expect(result.configPath).toBe(path.join(tmpDir, ".napkin"));
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+
+  describe("layout: embedded (.napkin/.obsidian/)", () => {
+    test("contentPath is .napkin/, obsidianPath is .napkin/.obsidian/", () => {
+      const result = findVault(vault.path);
+      expect(result.contentPath).toBe(path.join(vault.path, ".napkin"));
+      expect(result.configPath).toBe(path.join(vault.path, ".napkin"));
+      expect(result.obsidianPath).toBe(
+        path.join(vault.path, ".napkin", ".obsidian"),
+      );
+    });
+
+    test("existing config without vault field resolves as embedded", () => {
+      // Simulate a pre-existing vault: config.json has no vault field
+      const tmpDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "napkin-existing-test-"),
+      );
+      const napkinDir = path.join(tmpDir, ".napkin");
+      fs.mkdirSync(path.join(napkinDir, ".obsidian"), { recursive: true });
+      fs.writeFileSync(
+        path.join(napkinDir, "config.json"),
+        JSON.stringify({
+          overview: { depth: 3, keywords: 8 },
+          daily: { folder: "daily", format: "YYYY-MM-DD" },
+        }),
+      );
+      fs.writeFileSync(path.join(napkinDir, "README.md"), "# Hello");
+
+      try {
+        const result = findVault(tmpDir);
+        expect(result.contentPath).toBe(napkinDir);
+        expect(result.configPath).toBe(napkinDir);
+        expect(result.obsidianPath).toBe(path.join(napkinDir, ".obsidian"));
+        expect(result.name).toBe(path.basename(tmpDir));
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe("layout: sibling (.napkin/ alongside .obsidian/)", () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-sibling-test-"));
+      // Existing Obsidian vault with .obsidian/ at root
+      fs.mkdirSync(path.join(tmpDir, ".obsidian"), { recursive: true });
+      // napkin adopted — .napkin/ as sibling
+      fs.mkdirSync(path.join(tmpDir, ".napkin"), { recursive: true });
+      // config tells napkin the layout
+      fs.writeFileSync(
+        path.join(tmpDir, ".napkin", "config.json"),
+        JSON.stringify({ vault: { root: "..", obsidian: "../.obsidian" } }),
+      );
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    test("contentPath is parent dir, obsidianPath is sibling .obsidian/", () => {
+      const result = findVault(tmpDir);
+      expect(result.contentPath).toBe(tmpDir);
+      expect(result.configPath).toBe(path.join(tmpDir, ".napkin"));
+      expect(result.obsidianPath).toBe(path.join(tmpDir, ".obsidian"));
+    });
+
+    test("finds vault from subdirectory", () => {
+      const sub = path.join(tmpDir, "notes", "deep");
+      fs.mkdirSync(sub, { recursive: true });
+      const result = findVault(sub);
+      expect(result.contentPath).toBe(tmpDir);
+    });
+  });
+
+  describe("layout: nested (.obsidian/.napkin/)", () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-nested-test-"));
+      // Existing Obsidian vault
+      fs.mkdirSync(path.join(tmpDir, ".obsidian", ".napkin"), {
+        recursive: true,
+      });
+      // config inside .obsidian/.napkin/
+      fs.writeFileSync(
+        path.join(tmpDir, ".obsidian", ".napkin", "config.json"),
+        JSON.stringify({ vault: { root: "../..", obsidian: ".." } }),
+      );
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    test("contentPath is grandparent, obsidianPath is parent .obsidian/", () => {
+      const result = findVault(tmpDir);
+      expect(result.contentPath).toBe(tmpDir);
+      expect(result.configPath).toBe(path.join(tmpDir, ".obsidian", ".napkin"));
+      expect(result.obsidianPath).toBe(path.join(tmpDir, ".obsidian"));
+    });
   });
 });
 
 describe("getVaultConfig", () => {
   test("reads existing config file", () => {
-    const vaultPath = path.join(vault.path, ".napkin");
-    const config = getVaultConfig(vaultPath, "app.json");
+    const obsidianPath = path.join(vault.path, ".napkin", ".obsidian");
+    const config = getVaultConfig(obsidianPath, "app.json");
     expect(config).not.toBeNull();
     expect(config?.alwaysUpdateLinks).toBe(true);
   });
 
   test("returns null for missing config", () => {
-    const vaultPath = path.join(vault.path, ".napkin");
-    const config = getVaultConfig(vaultPath, "nonexistent.json");
+    const obsidianPath = path.join(vault.path, ".napkin", ".obsidian");
+    const config = getVaultConfig(obsidianPath, "nonexistent.json");
     expect(config).toBeNull();
   });
 });

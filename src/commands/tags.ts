@@ -58,7 +58,7 @@ export async function tags(
   },
 ) {
   const v = findVault(opts.vault);
-  const { tagCounts } = collectTags(v.path, opts.file);
+  const { tagCounts } = collectTags(v.contentPath, opts.file);
 
   const entries = [...tagCounts.entries()];
   if (opts.sort === "count") {
@@ -94,7 +94,7 @@ export async function tag(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const { tagCounts, tagFiles } = collectTags(v.path);
+  const { tagCounts, tagFiles } = collectTags(v.contentPath);
   const count = tagCounts.get(opts.name) || 0;
   const files = tagFiles.get(opts.name) || [];
 

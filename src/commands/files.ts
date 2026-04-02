@@ -28,12 +28,12 @@ export async function file(
     error("No file specified. Usage: obsidian-cli file <name>");
     process.exit(EXIT_NOT_FOUND);
   }
-  const resolved = resolveFile(v.path, fileRef);
+  const resolved = resolveFile(v.contentPath, fileRef);
   if (!resolved) {
-    fileNotFound(fileRef, suggestFile(v.path, fileRef));
+    fileNotFound(fileRef, suggestFile(v.contentPath, fileRef));
     process.exit(EXIT_NOT_FOUND);
   }
-  const info = getFileInfo(v.path, resolved);
+  const info = getFileInfo(v.contentPath, resolved);
 
   output(opts, {
     json: () => info,
@@ -57,7 +57,10 @@ export async function files(
   },
 ) {
   const v = findVault(opts.vault);
-  const result = listFiles(v.path, { folder: opts.folder, ext: opts.ext });
+  const result = listFiles(v.contentPath, {
+    folder: opts.folder,
+    ext: opts.ext,
+  });
 
   output(opts, {
     json: () => (opts.total ? { total: result.length } : { files: result }),
@@ -75,7 +78,7 @@ export async function folders(
   opts: OutputOptions & { vault?: string; folder?: string; total?: boolean },
 ) {
   const v = findVault(opts.vault);
-  const result = listFolders(v.path, opts.folder);
+  const result = listFolders(v.contentPath, opts.folder);
 
   output(opts, {
     json: () => (opts.total ? { total: result.length } : { folders: result }),
@@ -99,19 +102,19 @@ export async function folder(
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, folderPath);
+  const fullPath = path.join(v.contentPath, folderPath);
   if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
     error(`Folder not found: ${folderPath}`);
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fileCount = listFiles(v.path, { folder: folderPath }).length;
-  const folderCount = listFolders(v.path, folderPath).length;
+  const fileCount = listFiles(v.contentPath, { folder: folderPath }).length;
+  const folderCount = listFolders(v.contentPath, folderPath).length;
 
   let size = 0;
-  const allFiles = listFiles(v.path, { folder: folderPath });
+  const allFiles = listFiles(v.contentPath, { folder: folderPath });
   for (const f of allFiles) {
-    size += fs.statSync(path.join(v.path, f)).size;
+    size += fs.statSync(path.join(v.contentPath, f)).size;
   }
 
   if (opts.info) {
@@ -153,9 +156,9 @@ export async function open(
 
   let uri: string;
   if (fileRef) {
-    const resolved = resolveFile(v.path, fileRef);
+    const resolved = resolveFile(v.contentPath, fileRef);
     if (!resolved) {
-      fileNotFound(fileRef, suggestFile(v.path, fileRef));
+      fileNotFound(fileRef, suggestFile(v.contentPath, fileRef));
       process.exit(EXIT_NOT_FOUND);
     }
     const encodedFile = encodeURIComponent(resolved.replace(/\.md$/, ""));

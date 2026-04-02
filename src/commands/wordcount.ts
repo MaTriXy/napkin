@@ -26,13 +26,13 @@ export async function wordcount(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const content = fs.readFileSync(path.join(v.path, resolved), "utf-8");
+  const content = fs.readFileSync(path.join(v.contentPath, resolved), "utf-8");
   const { body } = parseFrontmatter(content);
   const text = body.trim();
   const words = text ? text.split(/\s+/).length : 0;

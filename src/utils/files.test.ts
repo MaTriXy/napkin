@@ -119,6 +119,51 @@ describe("readFile", () => {
   });
 });
 
+describe("sibling layout", () => {
+  let siblingVault: { path: string; cleanup: () => void };
+
+  beforeEach(() => {
+    const fs = require("node:fs");
+    const os = require("node:os");
+    const path = require("node:path");
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "napkin-sibling-files-"),
+    );
+    // Content at root level
+    fs.writeFileSync(path.join(tmpDir, "note.md"), "# Note");
+    fs.mkdirSync(path.join(tmpDir, "folder"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "folder", "deep.md"), "# Deep");
+    // .napkin/ and .obsidian/ as siblings
+    fs.mkdirSync(path.join(tmpDir, ".napkin"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, ".obsidian"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, ".napkin", "config.json"), "{}");
+    siblingVault = {
+      path: tmpDir,
+      cleanup: () => fs.rmSync(tmpDir, { recursive: true, force: true }),
+    };
+  });
+
+  afterEach(() => {
+    siblingVault.cleanup();
+  });
+
+  test("listFiles skips .napkin/ when content root is parent", () => {
+    const files = listFiles(siblingVault.path);
+    expect(files).toContain("note.md");
+    expect(files).toContain("folder/deep.md");
+    // Should NOT include .napkin/ contents
+    for (const f of files) {
+      expect(f).not.toMatch(/^\.napkin\//);
+    }
+  });
+
+  test("listFolders skips .napkin/ when content root is parent", () => {
+    const folders = listFolders(siblingVault.path);
+    expect(folders).toContain("folder");
+    expect(folders).not.toContain(".napkin");
+  });
+});
+
 describe("getFileInfo", () => {
   test("returns file info", () => {
     const info = getFileInfo(vault.vaultPath, "README.md");

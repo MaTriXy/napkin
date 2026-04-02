@@ -140,6 +140,69 @@ describe("init command", () => {
     }
   });
 
+  test("creates sibling layout when .obsidian/ already exists", async () => {
+    // Simulate existing Obsidian vault
+    fs.mkdirSync(path.join(tmpDir, ".obsidian"), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, ".obsidian", "app.json"),
+      JSON.stringify({ customSetting: true }),
+    );
+
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+    await init({ json: true, path: tmpDir });
+    console.log = orig;
+
+    const data = JSON.parse(logs.join(""));
+    expect(data.status).toBe("created");
+
+    // .napkin/ created as sibling to .obsidian/
+    const nap = path.join(tmpDir, ".napkin");
+    expect(fs.existsSync(nap)).toBe(true);
+    expect(fs.existsSync(path.join(nap, "config.json"))).toBe(true);
+
+    // Config should have vault layout pointing to parent
+    const config = JSON.parse(
+      fs.readFileSync(path.join(nap, "config.json"), "utf-8"),
+    );
+    expect(config.vault.root).toBe("..");
+    expect(config.vault.obsidian).toBe("../.obsidian");
+
+    // .obsidian/ config synced to the EXISTING .obsidian/, not inside .napkin/
+    expect(
+      fs.existsSync(path.join(tmpDir, ".obsidian", "daily-notes.json")),
+    ).toBe(true);
+    // Original .obsidian/ content preserved
+    const appJson = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, ".obsidian", "app.json"), "utf-8"),
+    );
+    expect(appJson.customSetting).toBe(true);
+    expect(appJson.alwaysUpdateLinks).toBe(true);
+
+    // No .obsidian/ inside .napkin/
+    expect(fs.existsSync(path.join(nap, ".obsidian"))).toBe(false);
+  });
+
+  test("sibling layout with template scaffolds content at vault root (parent dir)", async () => {
+    // Simulate existing Obsidian vault
+    fs.mkdirSync(path.join(tmpDir, ".obsidian"), { recursive: true });
+
+    await init({ quiet: true, path: tmpDir, template: "coding" });
+
+    // Template content should be in tmpDir (vault root), not .napkin/
+    expect(fs.existsSync(path.join(tmpDir, "NAPKIN.md"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "decisions"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "Templates"))).toBe(true);
+    // NOT inside .napkin/
+    expect(fs.existsSync(path.join(tmpDir, ".napkin", "NAPKIN.md"))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(tmpDir, ".napkin", "decisions"))).toBe(
+      false,
+    );
+  });
+
   test("rejects invalid template name", async () => {
     const orig = process.exit;
     let exitCode: number | undefined;

@@ -1,7 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+export interface VaultLayout {
+  /** Content root relative to .napkin/ dir (e.g. ".." for sibling layout) */
+  root: string;
+  /** .obsidian/ dir relative to .napkin/ dir (e.g. "../.obsidian" for sibling layout) */
+  obsidian: string;
+}
+
 export interface NapkinConfig {
+  vault?: VaultLayout;
   overview: {
     depth: number;
     keywords: number;
@@ -56,11 +64,11 @@ export const DEFAULT_CONFIG: NapkinConfig = {
 };
 
 /**
- * Load napkin config from .napkin/config.json.
+ * Load napkin config from config.json in the .napkin/ directory.
  * Missing fields fall back to defaults.
  */
-export function loadConfig(vaultPath: string): NapkinConfig {
-  const configPath = path.join(vaultPath, "config.json");
+export function loadConfig(napkinDir: string): NapkinConfig {
+  const configPath = path.join(napkinDir, "config.json");
   if (!fs.existsSync(configPath)) return { ...DEFAULT_CONFIG };
   try {
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
@@ -71,24 +79,34 @@ export function loadConfig(vaultPath: string): NapkinConfig {
 }
 
 /**
- * Save napkin config to .napkin/config.json and sync to .obsidian/.
+ * Save napkin config to config.json in the .napkin/ directory and sync to .obsidian/.
+ * If obsidianDir is not provided, resolves it from config.vault or defaults to .napkin/.obsidian/.
  */
-export function saveConfig(vaultPath: string, config: NapkinConfig): void {
-  const configPath = path.join(vaultPath, "config.json");
+export function saveConfig(
+  napkinDir: string,
+  config: NapkinConfig,
+  obsidianDir?: string,
+): void {
+  const configPath = path.join(napkinDir, "config.json");
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  syncObsidianConfig(vaultPath, config);
+  const resolvedObsidian =
+    obsidianDir ||
+    (config.vault?.obsidian
+      ? path.resolve(napkinDir, config.vault.obsidian)
+      : path.join(napkinDir, ".obsidian"));
+  syncObsidianConfig(resolvedObsidian, config);
 }
 
 /**
  * Update specific config fields, save, and sync.
  */
 export function updateConfig(
-  vaultPath: string,
+  napkinDir: string,
   partial: Record<string, unknown>,
 ): NapkinConfig {
-  const current = loadConfig(vaultPath);
+  const current = loadConfig(napkinDir);
   const updated = deepMerge(current, partial) as NapkinConfig;
-  saveConfig(vaultPath, updated);
+  saveConfig(napkinDir, updated);
   return updated;
 }
 
@@ -96,8 +114,7 @@ export function updateConfig(
  * Write .obsidian/ config files derived from napkin config.
  * napkin is the source of truth — Obsidian reads from these.
  */
-function syncObsidianConfig(vaultPath: string, config: NapkinConfig): void {
-  const obsidianDir = path.join(vaultPath, ".obsidian");
+function syncObsidianConfig(obsidianDir: string, config: NapkinConfig): void {
   if (!fs.existsSync(obsidianDir)) {
     fs.mkdirSync(obsidianDir, { recursive: true });
   }

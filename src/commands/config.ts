@@ -11,7 +11,7 @@ import { findVault } from "../utils/vault.js";
 
 export async function configShow(opts: OutputOptions & { vault?: string }) {
   const v = findVault(opts.vault);
-  const config = loadConfig(v.path);
+  const config = loadConfig(v.configPath);
 
   output(opts, {
     json: () => config,
@@ -49,7 +49,7 @@ export async function configSet(
   }
   current[parts[parts.length - 1]] = parsed;
 
-  const updated = updateConfig(v.path, obj);
+  const updated = updateConfig(v.configPath, obj);
 
   output(opts, {
     json: () => updated,
@@ -71,7 +71,7 @@ export async function configGet(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const config = loadConfig(v.path);
+  const config = loadConfig(v.configPath);
   const parts = opts.key.split(".");
   let value: unknown = config;
   for (const part of parts) {

@@ -15,7 +15,7 @@ import { findVault } from "../utils/vault.js";
 
 export async function bases(opts: OutputOptions & { vault?: string }) {
   const v = findVault(opts.vault);
-  const files = listFiles(v.path).filter((f) => f.endsWith(".base"));
+  const files = listFiles(v.contentPath).filter((f) => f.endsWith(".base"));
 
   output(opts, {
     json: () => ({ bases: files }),
@@ -33,13 +33,13 @@ export async function baseViews(
   opts: OutputOptions & { vault?: string; file?: string; path?: string },
 ) {
   const v = findVault(opts.vault);
-  const baseFile = resolveBaseFile(v.path, opts);
+  const baseFile = resolveBaseFile(v.contentPath, opts);
   if (!baseFile) {
     error("No base file specified. Use --file or --path");
     process.exit(EXIT_USER_ERROR);
   }
 
-  const content = fs.readFileSync(path.join(v.path, baseFile), "utf-8");
+  const content = fs.readFileSync(path.join(v.contentPath, baseFile), "utf-8");
   const config = parseBaseFile(content);
   const views = (config.views || []).map((view) => ({
     name: view.name || "(unnamed)",
@@ -66,16 +66,16 @@ export async function baseQuery(
   },
 ) {
   const v = findVault(opts.vault);
-  const baseFile = resolveBaseFile(v.path, opts);
+  const baseFile = resolveBaseFile(v.contentPath, opts);
   if (!baseFile) {
     error("No base file specified. Use --file or --path");
     process.exit(EXIT_USER_ERROR);
   }
 
-  const content = fs.readFileSync(path.join(v.path, baseFile), "utf-8");
+  const content = fs.readFileSync(path.join(v.contentPath, baseFile), "utf-8");
   const config = parseBaseFile(content);
 
-  const db = await buildDatabase(v.path);
+  const db = await buildDatabase(v.contentPath);
   try {
     // Derive thisFile from the base file path
     const thisFile = baseFile
@@ -201,7 +201,7 @@ export async function baseCreate(
       : `${opts.path}/${opts.name}.md`
     : `${opts.name}.md`;
 
-  const fullPath = path.join(v.path, targetPath);
+  const fullPath = path.join(v.contentPath, targetPath);
   fs.mkdirSync(path.dirname(fullPath), { recursive: true });
   fs.writeFileSync(fullPath, opts.content || "");
 

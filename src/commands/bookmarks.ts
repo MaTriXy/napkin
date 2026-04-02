@@ -20,8 +20,8 @@ interface Bookmark {
   items?: Bookmark[];
 }
 
-function readBookmarks(vaultPath: string): Bookmark[] {
-  const configPath = path.join(vaultPath, ".obsidian", "bookmarks.json");
+function readBookmarks(obsidianPath: string): Bookmark[] {
+  const configPath = path.join(obsidianPath, "bookmarks.json");
   try {
     const content = fs.readFileSync(configPath, "utf-8");
     return JSON.parse(content) as Bookmark[];
@@ -30,8 +30,8 @@ function readBookmarks(vaultPath: string): Bookmark[] {
   }
 }
 
-function writeBookmarks(vaultPath: string, bookmarks: Bookmark[]): void {
-  const configPath = path.join(vaultPath, ".obsidian", "bookmarks.json");
+function writeBookmarks(obsidianPath: string, bookmarks: Bookmark[]): void {
+  const configPath = path.join(obsidianPath, "bookmarks.json");
   fs.writeFileSync(configPath, JSON.stringify(bookmarks, null, 2));
 }
 
@@ -55,7 +55,7 @@ export async function bookmarks(
   },
 ) {
   const v = findVault(opts.vault);
-  const items = readBookmarks(v.path);
+  const items = readBookmarks(v.obsidianPath);
   const flat = flattenBookmarks(items);
 
   output(opts, {
@@ -105,9 +105,9 @@ export async function bookmark(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const items = readBookmarks(v.path);
+  const items = readBookmarks(v.obsidianPath);
   items.push(entry);
-  writeBookmarks(v.path, items);
+  writeBookmarks(v.obsidianPath, items);
 
   output(opts, {
     json: () => ({ added: entry }),

@@ -96,7 +96,7 @@ export async function canvases(
   opts: OutputOptions & { vault?: string; total?: boolean },
 ) {
   const v = findVault(opts.vault);
-  const files = listFiles(v.path).filter((f) => f.endsWith(".canvas"));
+  const files = listFiles(v.contentPath).filter((f) => f.endsWith(".canvas"));
 
   output(opts, {
     json: () => (opts.total ? { total: files.length } : { canvases: files }),
@@ -121,7 +121,7 @@ export async function canvasRead(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const { canvas, filePath } = readCanvas(v.path, opts.file);
+  const { canvas, filePath } = readCanvas(v.contentPath, opts.file);
 
   output(opts, {
     json: () => ({ path: filePath, ...canvas }),
@@ -166,7 +166,7 @@ export async function canvasNodes(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const { canvas } = readCanvas(v.path, opts.file);
+  const { canvas } = readCanvas(v.contentPath, opts.file);
   let nodes = canvas.nodes;
   if (opts.type) {
     nodes = nodes.filter((n) => n.type === opts.type);
@@ -203,7 +203,7 @@ export async function canvasCreate(
     ? opts.file
     : `${opts.file}.canvas`;
   const targetPath = opts.path ? `${opts.path}/${fileName}` : fileName;
-  const fullPath = path.join(v.path, targetPath);
+  const fullPath = path.join(v.contentPath, targetPath);
 
   if (fs.existsSync(fullPath)) {
     error(`Canvas already exists: ${targetPath}`);
@@ -212,7 +212,7 @@ export async function canvasCreate(
 
   fs.mkdirSync(path.dirname(fullPath), { recursive: true });
   const canvas: Canvas = { nodes: [], edges: [] };
-  writeCanvas(v.path, targetPath, canvas);
+  writeCanvas(v.contentPath, targetPath, canvas);
 
   output(opts, {
     json: () => ({ path: targetPath, created: true }),
@@ -249,7 +249,7 @@ export async function canvasAddNode(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const { canvas, filePath } = readCanvas(v.path, opts.file);
+  const { canvas, filePath } = readCanvas(v.contentPath, opts.file);
 
   // Auto-position: find rightmost node and place next to it
   const maxX = canvas.nodes.reduce((max, n) => Math.max(max, n.x + n.width), 0);
@@ -285,7 +285,7 @@ export async function canvasAddNode(
   if (opts.color) node.color = opts.color;
 
   canvas.nodes.push(node);
-  writeCanvas(v.path, filePath, canvas);
+  writeCanvas(v.contentPath, filePath, canvas);
 
   output(opts, {
     json: () => ({ id: node.id, type: node.type, added: true }),
@@ -315,7 +315,7 @@ export async function canvasAddEdge(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const { canvas, filePath } = readCanvas(v.path, opts.file);
+  const { canvas, filePath } = readCanvas(v.contentPath, opts.file);
 
   // Validate node IDs exist (match by full ID or prefix)
   const findNode = (ref: string) =>
@@ -344,7 +344,7 @@ export async function canvasAddEdge(
   if (opts.color) edge.color = opts.color;
 
   canvas.edges.push(edge);
-  writeCanvas(v.path, filePath, canvas);
+  writeCanvas(v.contentPath, filePath, canvas);
 
   output(opts, {
     json: () => ({
@@ -373,7 +373,7 @@ export async function canvasRemoveNode(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const { canvas, filePath } = readCanvas(v.path, opts.file);
+  const { canvas, filePath } = readCanvas(v.contentPath, opts.file);
   const id = opts.id;
   const node = canvas.nodes.find(
     (n) => n.id === id || n.id.startsWith(id as string),
@@ -388,7 +388,7 @@ export async function canvasRemoveNode(
   canvas.edges = canvas.edges.filter(
     (e) => e.fromNode !== node.id && e.toNode !== node.id,
   );
-  writeCanvas(v.path, filePath, canvas);
+  writeCanvas(v.contentPath, filePath, canvas);
 
   output(opts, {
     json: () => ({ id: node.id, removed: true }),

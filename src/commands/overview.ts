@@ -351,7 +351,7 @@ export async function overview(
   },
 ) {
   const v = findVault(opts.vault);
-  const config = loadConfig(v.path);
+  const config = loadConfig(v.configPath);
   const maxDepth = opts.depth
     ? Number.parseInt(opts.depth, 10)
     : config.overview.depth;
@@ -359,10 +359,10 @@ export async function overview(
     ? Number.parseInt(opts.keywords, 10)
     : config.overview.keywords;
 
-  const folders = buildOverview(v.path, maxDepth, maxKeywords);
+  const folders = buildOverview(v.contentPath, maxDepth, maxKeywords);
 
   // Load context note if present
-  const contextPath = path.join(v.path, "NAPKIN.md");
+  const contextPath = path.join(v.contentPath, "NAPKIN.md");
   const context = fs.existsSync(contextPath)
     ? fs.readFileSync(contextPath, "utf-8").trim()
     : null;

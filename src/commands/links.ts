@@ -64,13 +64,13 @@ export async function backlinks(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const { incoming } = buildLinkIndex(v.path);
+  const { incoming } = buildLinkIndex(v.contentPath);
   const links = incoming.get(resolved) || [];
 
   output(opts, {
@@ -91,13 +91,13 @@ export async function links(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const content = fs.readFileSync(path.join(v.path, resolved), "utf-8");
+  const content = fs.readFileSync(path.join(v.contentPath, resolved), "utf-8");
   const { outgoing } = extractLinks(content);
 
   output(opts, {
@@ -118,7 +118,7 @@ export async function unresolvedLinks(
   },
 ) {
   const v = findVault(opts.vault);
-  const { unresolved } = buildLinkIndex(v.path);
+  const { unresolved } = buildLinkIndex(v.contentPath);
 
   const entries = [...unresolved.entries()].sort((a, b) =>
     a[0].localeCompare(b[0]),
@@ -154,7 +154,7 @@ export async function orphans(
   opts: OutputOptions & { vault?: string; total?: boolean },
 ) {
   const v = findVault(opts.vault);
-  const { incoming } = buildLinkIndex(v.path);
+  const { incoming } = buildLinkIndex(v.contentPath);
 
   const result = [...incoming.entries()]
     .filter(([_, links]) => links.length === 0)
@@ -174,7 +174,7 @@ export async function deadends(
   opts: OutputOptions & { vault?: string; total?: boolean },
 ) {
   const v = findVault(opts.vault);
-  const { outgoing } = buildLinkIndex(v.path);
+  const { outgoing } = buildLinkIndex(v.contentPath);
 
   const result = [...outgoing.entries()]
     .filter(([_, links]) => links.length === 0)

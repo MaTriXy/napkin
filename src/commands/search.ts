@@ -150,9 +150,9 @@ export async function search(opts: SearchOpts) {
     process.exit(EXIT_USER_ERROR);
   }
 
-  const config = loadConfig(v.path);
-  const { index, docs } = buildIndex(v.path, opts.path);
-  const backlinkCounts = buildBacklinkCounts(v.path);
+  const config = loadConfig(v.configPath);
+  const { index, docs } = buildIndex(v.contentPath, opts.path);
+  const backlinkCounts = buildBacklinkCounts(v.contentPath);
   const results = index.search(opts.query);
   const contextLines = opts.snippetLines
     ? Number.parseInt(opts.snippetLines, 10)

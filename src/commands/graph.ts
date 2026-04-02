@@ -461,7 +461,8 @@ export async function graph(
   options: OutputOptions & { vault?: string },
 ): Promise<void> {
   const { findVault } = await import("../utils/vault.js");
-  const vault = options.vault ? options.vault : findVault(process.cwd())?.path;
+  const vaultInfo = findVault(options.vault || process.cwd());
+  const vault = vaultInfo?.contentPath;
 
   if (!vault) {
     error("No vault found. Run napkin init or use --vault <path>");
@@ -469,7 +470,7 @@ export async function graph(
   }
 
   const { loadConfig } = await import("../utils/config.js");
-  const config = loadConfig(vault);
+  const config = loadConfig(vaultInfo.configPath);
   const renderer = config.graph?.renderer ?? "auto";
 
   const { nodes, links } = buildGraphData(vault);

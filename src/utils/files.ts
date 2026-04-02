@@ -28,6 +28,7 @@ export function listFiles(
     ".git",
     ".trash",
     ".nanny",
+    ".napkin",
     "node_modules",
   ]);
   // Internal napkin files that shouldn't appear in vault content listings

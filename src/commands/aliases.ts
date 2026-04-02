@@ -41,7 +41,7 @@ export async function aliases(
   },
 ) {
   const v = findVault(opts.vault);
-  const result = collectAliases(v.path, opts.file);
+  const result = collectAliases(v.contentPath, opts.file);
 
   output(opts, {
     json: () => {

@@ -62,16 +62,16 @@ export function getDailyPath(vaultPath: string, date?: Date): string {
 
 export async function daily(opts: OutputOptions & { vault?: string }) {
   const v = findVault(opts.vault);
-  const dailyPath = getDailyPath(v.path);
-  const fullPath = path.join(v.path, dailyPath);
+  const dailyPath = getDailyPath(v.configPath);
+  const fullPath = path.join(v.contentPath, dailyPath);
 
   // Create if doesn't exist
   if (!fs.existsSync(fullPath)) {
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-    const config = getDailyConfig(v.path);
+    const config = getDailyConfig(v.configPath);
     let content = "";
     if (config.template) {
-      const templatePath = path.join(v.path, `${config.template}.md`);
+      const templatePath = path.join(v.contentPath, `${config.template}.md`);
       if (fs.existsSync(templatePath)) {
         content = fs.readFileSync(templatePath, "utf-8");
       }
@@ -87,7 +87,7 @@ export async function daily(opts: OutputOptions & { vault?: string }) {
 
 export async function dailyPath(opts: OutputOptions & { vault?: string }) {
   const v = findVault(opts.vault);
-  const dp = getDailyPath(v.path);
+  const dp = getDailyPath(v.configPath);
 
   output(opts, {
     json: () => ({ path: dp }),
@@ -97,8 +97,8 @@ export async function dailyPath(opts: OutputOptions & { vault?: string }) {
 
 export async function dailyRead(opts: OutputOptions & { vault?: string }) {
   const v = findVault(opts.vault);
-  const dp = getDailyPath(v.path);
-  const fullPath = path.join(v.path, dp);
+  const dp = getDailyPath(v.configPath);
+  const fullPath = path.join(v.contentPath, dp);
 
   if (!fs.existsSync(fullPath)) {
     error(`Daily note not found: ${dp}`);
@@ -122,8 +122,8 @@ export async function dailyAppend(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const dp = getDailyPath(v.path);
-  const fullPath = path.join(v.path, dp);
+  const dp = getDailyPath(v.configPath);
+  const fullPath = path.join(v.contentPath, dp);
 
   // Create if doesn't exist
   if (!fs.existsSync(fullPath)) {
@@ -150,8 +150,8 @@ export async function dailyPrepend(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const dp = getDailyPath(v.path);
-  const fullPath = path.join(v.path, dp);
+  const dp = getDailyPath(v.configPath);
+  const fullPath = path.join(v.contentPath, dp);
 
   if (!fs.existsSync(fullPath)) {
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });

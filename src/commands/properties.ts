@@ -50,7 +50,7 @@ export async function properties(
   },
 ) {
   const v = findVault(opts.vault);
-  const propCounts = collectProperties(v.path, opts.file);
+  const propCounts = collectProperties(v.contentPath, opts.file);
 
   const entries = [...propCounts.entries()];
   if (opts.sort === "count") {
@@ -95,13 +95,13 @@ export async function propertySet(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, resolved);
+  const fullPath = path.join(v.contentPath, resolved);
   const content = fs.readFileSync(fullPath, "utf-8");
 
   // Try to parse value as number/boolean/array
@@ -133,13 +133,13 @@ export async function propertyRemove(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, resolved);
+  const fullPath = path.join(v.contentPath, resolved);
   const content = fs.readFileSync(fullPath, "utf-8");
   const updated = removeProp(content, opts.name);
   fs.writeFileSync(fullPath, updated);
@@ -163,13 +163,13 @@ export async function propertyRead(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, resolved);
+  const fullPath = path.join(v.contentPath, resolved);
   const content = fs.readFileSync(fullPath, "utf-8");
   const { properties: props } = parseFrontmatter(content);
   const value = props[opts.name];

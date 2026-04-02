@@ -23,13 +23,13 @@ export async function read(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, fileRef);
+  const resolved = resolveFile(v.contentPath, fileRef);
   if (!resolved) {
-    fileNotFound(fileRef, suggestFile(v.path, fileRef));
+    fileNotFound(fileRef, suggestFile(v.contentPath, fileRef));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const content = fs.readFileSync(path.join(v.path, resolved), "utf-8");
+  const content = fs.readFileSync(path.join(v.contentPath, resolved), "utf-8");
 
   output(opts, {
     json: () => ({ path: resolved, content }),
@@ -58,7 +58,7 @@ export async function create(
     targetPath = `${name}.md`;
   }
 
-  const fullPath = path.join(v.path, targetPath);
+  const fullPath = path.join(v.contentPath, targetPath);
 
   if (fs.existsSync(fullPath) && !opts.overwrite) {
     error(`File already exists: ${targetPath}. Use --overwrite to replace.`);
@@ -68,14 +68,14 @@ export async function create(
   let content = opts.content || "";
 
   if (opts.template) {
-    const config = loadConfig(v.path);
+    const config = loadConfig(v.configPath);
     const templateRef =
-      resolveFile(v.path, opts.template) ||
-      resolveFile(v.path, `${config.templates.folder}/${opts.template}`);
+      resolveFile(v.contentPath, opts.template) ||
+      resolveFile(v.contentPath, `${config.templates.folder}/${opts.template}`);
     if (templateRef) {
-      content = fs.readFileSync(path.join(v.path, templateRef), "utf-8");
+      content = fs.readFileSync(path.join(v.contentPath, templateRef), "utf-8");
     } else {
-      const tmplFiles = listFiles(v.path, {
+      const tmplFiles = listFiles(v.contentPath, {
         folder: config.templates.folder,
         ext: "md",
       }).map((f: string) => path.basename(f, ".md"));
@@ -124,13 +124,13 @@ export async function append(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, resolved);
+  const fullPath = path.join(v.contentPath, resolved);
   const existing = fs.readFileSync(fullPath, "utf-8");
   const separator = opts.inline ? "" : "\n";
   fs.writeFileSync(fullPath, existing + separator + opts.content);
@@ -162,13 +162,13 @@ export async function prepend(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, resolved);
+  const fullPath = path.join(v.contentPath, resolved);
   const existing = fs.readFileSync(fullPath, "utf-8");
   const separator = opts.inline ? "" : "\n";
 
@@ -200,9 +200,9 @@ export async function move(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
@@ -212,8 +212,8 @@ export async function move(
     destPath = path.join(destPath, path.basename(resolved));
   }
 
-  const srcFull = path.join(v.path, resolved);
-  const destFull = path.join(v.path, destPath);
+  const srcFull = path.join(v.contentPath, resolved);
+  const destFull = path.join(v.contentPath, destPath);
   fs.mkdirSync(path.dirname(destFull), { recursive: true });
   fs.renameSync(srcFull, destFull);
 
@@ -236,16 +236,16 @@ export async function rename(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
   const newName = opts.name.endsWith(".md") ? opts.name : `${opts.name}.md`;
   const destPath = path.join(path.dirname(resolved), newName);
-  const srcFull = path.join(v.path, resolved);
-  const destFull = path.join(v.path, destPath);
+  const srcFull = path.join(v.contentPath, resolved);
+  const destFull = path.join(v.contentPath, destPath);
   fs.renameSync(srcFull, destFull);
 
   output(opts, {
@@ -263,18 +263,18 @@ export async function del(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const resolved = resolveFile(v.path, opts.file);
+  const resolved = resolveFile(v.contentPath, opts.file);
   if (!resolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const fullPath = path.join(v.path, resolved);
+  const fullPath = path.join(v.contentPath, resolved);
 
   if (opts.permanent) {
     fs.unlinkSync(fullPath);
   } else {
-    const trashDir = path.join(v.path, ".trash");
+    const trashDir = path.join(v.contentPath, ".trash");
     fs.mkdirSync(trashDir, { recursive: true });
     const trashPath = path.join(trashDir, path.basename(resolved));
     fs.renameSync(fullPath, trashPath);

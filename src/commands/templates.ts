@@ -21,8 +21,8 @@ export async function templates(
   opts: OutputOptions & { vault?: string; total?: boolean },
 ) {
   const v = findVault(opts.vault);
-  const folder = getTemplateFolder(v.path);
-  const files = listFiles(v.path, { folder, ext: "md" }).map((f) =>
+  const folder = getTemplateFolder(v.configPath);
+  const files = listFiles(v.contentPath, { folder, ext: "md" }).map((f) =>
     path.basename(f, ".md"),
   );
 
@@ -49,19 +49,19 @@ export async function templateRead(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const folder = getTemplateFolder(v.path);
+  const folder = getTemplateFolder(v.configPath);
   const resolved =
-    resolveFile(v.path, `${folder}/${opts.name}`) ||
-    resolveFile(v.path, opts.name);
+    resolveFile(v.contentPath, `${folder}/${opts.name}`) ||
+    resolveFile(v.contentPath, opts.name);
   if (!resolved) {
-    const templateFiles = listFiles(v.path, { folder, ext: "md" }).map((f) =>
-      path.basename(f, ".md"),
+    const templateFiles = listFiles(v.contentPath, { folder, ext: "md" }).map(
+      (f) => path.basename(f, ".md"),
     );
     fileNotFound(opts.name, templateFiles.slice(0, 3));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  let content = fs.readFileSync(path.join(v.path, resolved), "utf-8");
+  let content = fs.readFileSync(path.join(v.contentPath, resolved), "utf-8");
 
   if (opts.resolve) {
     const now = new Date();
@@ -96,26 +96,26 @@ export async function templateInsert(
     process.exit(EXIT_USER_ERROR);
   }
 
-  const folder = getTemplateFolder(v.path);
+  const folder = getTemplateFolder(v.configPath);
   const templateResolved =
-    resolveFile(v.path, `${folder}/${opts.name}`) ||
-    resolveFile(v.path, opts.name);
+    resolveFile(v.contentPath, `${folder}/${opts.name}`) ||
+    resolveFile(v.contentPath, opts.name);
   if (!templateResolved) {
-    const templateFiles = listFiles(v.path, { folder, ext: "md" }).map((f) =>
-      path.basename(f, ".md"),
+    const templateFiles = listFiles(v.contentPath, { folder, ext: "md" }).map(
+      (f) => path.basename(f, ".md"),
     );
     fileNotFound(opts.name, templateFiles.slice(0, 3));
     process.exit(EXIT_NOT_FOUND);
   }
 
-  const targetResolved = resolveFile(v.path, opts.file);
+  const targetResolved = resolveFile(v.contentPath, opts.file);
   if (!targetResolved) {
-    fileNotFound(opts.file, suggestFile(v.path, opts.file));
+    fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
     process.exit(EXIT_NOT_FOUND);
   }
 
   let templateContent = fs.readFileSync(
-    path.join(v.path, templateResolved),
+    path.join(v.contentPath, templateResolved),
     "utf-8",
   );
 
@@ -129,7 +129,7 @@ export async function templateInsert(
     .replace(/\{\{time\}\}/g, timeStr)
     .replace(/\{\{title\}\}/g, title);
 
-  const targetPath = path.join(v.path, targetResolved);
+  const targetPath = path.join(v.contentPath, targetResolved);
   const existing = fs.readFileSync(targetPath, "utf-8");
   fs.writeFileSync(targetPath, existing + templateContent);
 

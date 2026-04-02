@@ -11,7 +11,7 @@ import {
   type OutputOptions,
   output,
 } from "../utils/output.js";
-import { findVault } from "../utils/vault.js";
+import { findVault, type VaultInfo } from "../utils/vault.js";
 import { getDailyPath } from "./daily.js";
 
 interface TaskWithFile extends Task {
@@ -19,24 +19,27 @@ interface TaskWithFile extends Task {
 }
 
 function collectTasks(
-  vaultPath: string,
+  vault: VaultInfo,
   opts: { file?: string; daily?: boolean },
 ): TaskWithFile[] {
   let files: string[];
 
   if (opts.daily) {
-    const dp = getDailyPath(vaultPath);
-    files = fs.existsSync(path.join(vaultPath, dp)) ? [dp] : [];
+    const dp = getDailyPath(vault.configPath);
+    files = fs.existsSync(path.join(vault.contentPath, dp)) ? [dp] : [];
   } else if (opts.file) {
-    const r = resolveFile(vaultPath, opts.file);
+    const r = resolveFile(vault.contentPath, opts.file);
     files = r ? [r] : [];
   } else {
-    files = listFiles(vaultPath, { ext: "md" });
+    files = listFiles(vault.contentPath, { ext: "md" });
   }
 
   const results: TaskWithFile[] = [];
   for (const file of files) {
-    const content = fs.readFileSync(path.join(vaultPath, file), "utf-8");
+    const content = fs.readFileSync(
+      path.join(vault.contentPath, file),
+      "utf-8",
+    );
     const tasks = extractTasks(content);
     for (const t of tasks) {
       results.push({ ...t, file });
@@ -58,7 +61,10 @@ export async function tasks(
   },
 ) {
   const v = findVault(opts.vault);
-  let result = collectTasks(v.path, { file: opts.file, daily: opts.daily });
+  let result = collectTasks(v, {
+    file: opts.file,
+    daily: opts.daily,
+  });
 
   if (opts.done) result = result.filter((t) => t.done);
   if (opts.todo) result = result.filter((t) => !t.done);
@@ -114,33 +120,33 @@ export async function task(
       error("Invalid ref format. Use --ref <path:line>");
       process.exit(EXIT_USER_ERROR);
     }
-    const resolved = resolveFile(v.path, parts[0]);
+    const resolved = resolveFile(v.contentPath, parts[0]);
     if (!resolved) {
-      fileNotFound(parts[0], suggestFile(v.path, parts[0]));
+      fileNotFound(parts[0], suggestFile(v.contentPath, parts[0]));
       process.exit(EXIT_NOT_FOUND);
     }
     filePath = resolved;
     lineNum = Number.parseInt(parts[1], 10);
   } else if (opts.daily) {
-    filePath = getDailyPath(v.path);
+    filePath = getDailyPath(v.configPath);
     lineNum = Number.parseInt(opts.line || "0", 10);
   } else {
     if (!opts.file || !opts.line) {
       error("Specify --file and --line, or --ref <path:line>");
       process.exit(EXIT_USER_ERROR);
     }
-    const resolved = resolveFile(v.path, opts.file);
+    const resolved = resolveFile(v.contentPath, opts.file);
     if (!resolved) {
-      fileNotFound(opts.file, suggestFile(v.path, opts.file));
+      fileNotFound(opts.file, suggestFile(v.contentPath, opts.file));
       process.exit(EXIT_NOT_FOUND);
     }
     filePath = resolved;
     lineNum = Number.parseInt(opts.line, 10);
   }
 
-  const fullPath = path.join(v.path, filePath);
+  const fullPath = path.join(v.contentPath, filePath);
   if (!fs.existsSync(fullPath)) {
-    fileNotFound(filePath, suggestFile(v.path, filePath));
+    fileNotFound(filePath, suggestFile(v.contentPath, filePath));
     process.exit(EXIT_NOT_FOUND);
   }
 
