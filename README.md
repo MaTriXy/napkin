@@ -165,9 +165,9 @@ napkin read "Note" -q           # Raw markdown, nothing else
 napkin vault                          # Vault info
 napkin overview                       # Vault map with keywords
 napkin read <file>                    # Read file contents
-napkin create "Note" "Hello"          # Create with content
-napkin append "Note" "More text"      # Append to file
-napkin prepend "Note" "Top line"      # Prepend after frontmatter
+napkin create "Note" $'# Hello\nFirst note.'   # Create with content
+napkin append "Note" $'\n## Update\nNew info.'   # Append to file
+napkin prepend "Note" $'---\ntags: [new]\n---'   # Prepend frontmatter
 napkin move "Note" Archive            # Move to folder
 napkin rename "Note" "Renamed"        # Rename file
 napkin delete "Note"                  # Move to .trash
