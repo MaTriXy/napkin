@@ -38,5 +38,5 @@ export function setConfigValue(
   current[parts[parts.length - 1]] = parsed;
 
   const updated = updateConfig(configPath, obj);
-  return { config: updated, parsed };
+  return { config: updated as unknown as Record<string, unknown>, parsed };
 }

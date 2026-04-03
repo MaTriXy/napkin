@@ -338,7 +338,7 @@ export class Napkin {
   // ── Config ──────────────────────────────────────────────────────
 
   config(): Record<string, unknown> {
-    return loadConfig(this.vault.configPath);
+    return loadConfig(this.vault.configPath) as unknown as Record<string, unknown>;
   }
 
   configGet(key: string): unknown {
