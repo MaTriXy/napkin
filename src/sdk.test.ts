@@ -339,11 +339,6 @@ describe("static", () => {
     expect(templates[0].name).toBeTruthy();
   });
 
-  test("formatSize formats bytes", () => {
-    expect(Napkin.formatSize(500)).toBe("500 B");
-    expect(Napkin.formatSize(1500)).toBe("1.5 KB");
-  });
-
   test("scaffold creates a vault", () => {
     const os = require("node:os");
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-sdk-"));

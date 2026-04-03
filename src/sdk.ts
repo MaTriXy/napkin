@@ -55,8 +55,6 @@ import {
 } from "./core/files.js";
 import {
   getInitTemplates,
-  type InitResult,
-  initVault,
   type ScaffoldResult,
   scaffoldVault,
   type TemplateInfo,
@@ -95,11 +93,7 @@ import {
   listTemplates,
   readTemplate,
 } from "./core/templates.js";
-import {
-  formatSize,
-  getVaultMetadata,
-  type VaultMetadata,
-} from "./core/vault.js";
+import { getVaultMetadata, type VaultMetadata } from "./core/vault.js";
 import { getWordCount, type WordCount } from "./core/wordcount.js";
 import type { Heading } from "./utils/markdown.js";
 import { findVault, type VaultInfo } from "./utils/vault.js";
@@ -451,14 +445,5 @@ export class Napkin {
 
   static vaultTemplates(): TemplateInfo[] {
     return getInitTemplates();
-  }
-
-  /** @deprecated Use Napkin.scaffold() instead */
-  static init(opts: { path: string; template?: string }): InitResult {
-    return initVault(opts);
-  }
-
-  static formatSize(bytes: number): string {
-    return formatSize(bytes);
   }
 }

@@ -11,11 +11,10 @@ export type {
   ReadResult,
 } from "./core/crud.js";
 export type { FileInfo, FolderInfo } from "./core/files.js";
-export type { InitResult, ScaffoldResult, TemplateInfo } from "./core/init.js";
-export type { VaultLinks } from "./core/links.js";
+export type { ScaffoldResult, TemplateInfo } from "./core/init.js";
 export type { OverviewFolder, VaultOverview } from "./core/overview.js";
 export type { SearchOptions, SearchResult } from "./core/search.js";
-export type { TagData, TagInfo } from "./core/tags.js";
+export type { TagInfo } from "./core/tags.js";
 export type { TaskShowResult, TaskWithFile } from "./core/tasks.js";
 export type { VaultMetadata } from "./core/vault.js";
 export type { WordCount } from "./core/wordcount.js";

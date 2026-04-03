@@ -1,3 +1,4 @@
+import { formatSize } from "../core/vault.js";
 import { Napkin } from "../sdk.js";
 import { bold, dim, type OutputOptions, output } from "../utils/output.js";
 
@@ -12,7 +13,7 @@ export async function vault(opts: OutputOptions & { vault?: string }) {
       console.log(`${dim("path")}       ${meta.path}`);
       console.log(`${dim("files")}      ${meta.files}`);
       console.log(`${dim("folders")}    ${meta.folders}`);
-      console.log(`${dim("size")}       ${Napkin.formatSize(meta.size)}`);
+      console.log(`${dim("size")}       ${formatSize(meta.size)}`);
     },
   });
 }
