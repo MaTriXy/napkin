@@ -40,7 +40,8 @@ napkin is also a library. No CLI, no stdout - just data:
 ```typescript
 import { Napkin } from "napkin-ai";
 
-const n = new Napkin({ vault: "/path/to/project" });
+// Always works - creates bare vault if needed
+const n = new Napkin("/path/to/project");
 
 // Progressive disclosure
 const overview = n.overview();
@@ -65,11 +66,11 @@ n.bookmarks();
 n.config();
 ```
 
-Static methods for vault initialization:
+Scaffold with a template:
 
 ```typescript
-Napkin.init({ path: "/path/to/project", template: "coding" });
-Napkin.initTemplates(); // list available templates
+Napkin.scaffold("/path/to/project", { template: "coding" });
+Napkin.vaultTemplates(); // list available templates
 ```
 
 All SDK methods return typed data and throw errors on failure. No `console.log`, no `process.exit`.

@@ -11,7 +11,7 @@ export type {
   ReadResult,
 } from "./core/crud.js";
 export type { FileInfo, FolderInfo } from "./core/files.js";
-export type { InitResult, TemplateInfo } from "./core/init.js";
+export type { InitResult, ScaffoldResult, TemplateInfo } from "./core/init.js";
 export type { VaultLinks } from "./core/links.js";
 export type { OverviewFolder, VaultOverview } from "./core/overview.js";
 export type { SearchOptions, SearchResult } from "./core/search.js";

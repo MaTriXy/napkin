@@ -23,8 +23,7 @@ describe("init command", () => {
     console.log = orig;
 
     const data = JSON.parse(logs.join(""));
-    expect(data.status).toBe("created");
-    expect(data.napkin).toBe(true);
+    expect(data.created).toBe(true);
 
     const nap = path.join(tmpDir, ".napkin");
     expect(fs.existsSync(nap)).toBe(true);
@@ -40,7 +39,7 @@ describe("init command", () => {
     );
   });
 
-  test("reports exists when already initialized", async () => {
+  test("reports not created when already initialized", async () => {
     // First init
     await init({ quiet: true, path: tmpDir });
 
@@ -52,7 +51,7 @@ describe("init command", () => {
     console.log = orig;
 
     const data = JSON.parse(logs.join(""));
-    expect(data.status).toBe("exists");
+    expect(data.created).toBe(false);
   });
 
   test("creates config when only .napkin/ dir exists", async () => {
@@ -66,7 +65,7 @@ describe("init command", () => {
     console.log = orig;
 
     const data = JSON.parse(logs.join(""));
-    expect(data.status).toBe("created");
+    expect(data.created).toBe(false);
 
     const nap = path.join(tmpDir, ".napkin");
     expect(fs.existsSync(path.join(nap, "config.json"))).toBe(true);
@@ -81,7 +80,7 @@ describe("init command", () => {
     console.log = orig;
 
     const data = JSON.parse(logs.join(""));
-    expect(data.status).toBe("created");
+    expect(data.created).toBe(true);
     expect(data.template).toBe("coding");
     expect(data.files).toContain("NAPKIN.md");
     expect(data.files).toContain("decisions/");
@@ -105,7 +104,6 @@ describe("init command", () => {
     console.log = orig;
 
     const data = JSON.parse(logs.join(""));
-    expect(data.status).toBe("created");
     expect(data.template).toBe("company");
     const nap2 = path.join(tmpDir, ".napkin");
     expect(fs.existsSync(path.join(nap2, "runbooks"))).toBe(true);
@@ -127,7 +125,7 @@ describe("init command", () => {
       console.log = orig;
 
       const data = JSON.parse(logs.join(""));
-      expect(data.status).toBe("created");
+      expect(data.created).toBe(true);
       expect(data.template).toBe(tmpl);
       expect(data.files).toContain("NAPKIN.md");
       expect(data.files.length).toBeGreaterThan(3);
@@ -155,7 +153,7 @@ describe("init command", () => {
     console.log = orig;
 
     const data = JSON.parse(logs.join(""));
-    expect(data.status).toBe("created");
+    expect(data.created).toBe(true);
 
     // .napkin/ created as sibling to .obsidian/
     const nap = path.join(tmpDir, ".napkin");

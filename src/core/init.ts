@@ -116,6 +116,62 @@ export function initVault(opts: {
   };
 }
 
+export interface ScaffoldResult {
+  path: string;
+  created: boolean;
+  template: string;
+  files: string[];
+}
+
+export function scaffoldVault(
+  targetPath: string,
+  template?: string,
+): ScaffoldResult {
+  const resolved = path.resolve(targetPath);
+  const napkinDir = path.join(resolved, ".napkin");
+  const existingObsidian = path.join(resolved, ".obsidian");
+  const isSiblingLayout =
+    fs.existsSync(existingObsidian) &&
+    fs.statSync(existingObsidian).isDirectory();
+
+  const napkinExisted = fs.existsSync(napkinDir);
+
+  if (!napkinExisted) {
+    fs.mkdirSync(napkinDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(path.join(napkinDir, "config.json"))) {
+    if (isSiblingLayout) {
+      const config: NapkinConfig = {
+        ...DEFAULT_CONFIG,
+        vault: { root: "..", obsidian: "../.obsidian" },
+      };
+      saveConfig(napkinDir, config, existingObsidian);
+    } else {
+      saveConfig(napkinDir, DEFAULT_CONFIG);
+    }
+  }
+
+  const contentRoot = isSiblingLayout ? resolved : napkinDir;
+  let files: string[] = [];
+
+  if (template) {
+    if (!TEMPLATES[template]) {
+      throw new Error(
+        `Unknown template: ${template}. Available: ${Object.keys(TEMPLATES).join(", ")}`,
+      );
+    }
+    files = scaffoldTemplate(contentRoot, TEMPLATES[template]);
+  }
+
+  return {
+    path: napkinDir,
+    created: !napkinExisted,
+    template: template || "",
+    files,
+  };
+}
+
 export function getInitTemplates(): TemplateInfo[] {
   return Object.values(TEMPLATES).map((t) => ({
     name: t.name,

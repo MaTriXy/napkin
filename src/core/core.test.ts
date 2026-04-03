@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createTempVault } from "../utils/test-helpers.js";
+import { findVault } from "../utils/vault.js";
 import {
   appendFile,
   createFile,
@@ -21,16 +22,16 @@ import {
   removeProperty,
   setProperty,
 } from "./properties.js";
-import { getWordCount } from "./wordcount.js";
 import { showTask, updateTask } from "./tasks.js";
-import { findVault } from "../utils/vault.js";
+import { getWordCount } from "./wordcount.js";
 
 let v: { path: string; vaultPath: string; cleanup: () => void };
 
 beforeEach(() => {
   v = createTempVault({
     "README.md": "# Vault\nWelcome\n\n- [ ] task one\n- [x] task two",
-    "Projects/note.md": "---\ntitle: Note\ntags:\n  - project\n---\nBody content",
+    "Projects/note.md":
+      "---\ntitle: Note\ntags:\n  - project\n---\nBody content",
     "Templates/Daily Note.md": "# {{date}}\n\n## Tasks\n",
   });
 });
@@ -103,9 +104,9 @@ describe("core throws on file not found", () => {
   });
 
   test("setProperty throws with prefix", () => {
-    expect(() =>
-      setProperty(v.vaultPath, "nonexistent", "key", "val"),
-    ).toThrow("File not found: nonexistent");
+    expect(() => setProperty(v.vaultPath, "nonexistent", "key", "val")).toThrow(
+      "File not found: nonexistent",
+    );
   });
 
   test("removeProperty throws with prefix", () => {
@@ -274,9 +275,7 @@ describe("showTask", () => {
   });
 
   test("throws on missing file", () => {
-    expect(() => showTask(v.vaultPath, "nope.md", 1)).toThrow(
-      "File not found",
-    );
+    expect(() => showTask(v.vaultPath, "nope.md", 1)).toThrow("File not found");
   });
 });
 
@@ -318,11 +317,7 @@ describe("property operations", () => {
   });
 
   test("readProperty returns null for missing property", () => {
-    const result = readProperty(
-      v.vaultPath,
-      "Projects/note.md",
-      "nonexistent",
-    );
+    const result = readProperty(v.vaultPath, "Projects/note.md", "nonexistent");
     expect(result.value).toBeNull();
   });
 

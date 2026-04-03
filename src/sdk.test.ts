@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { createTempVault } from "./utils/test-helpers.js";
 import { Napkin } from "./sdk.js";
+import { createTempVault } from "./utils/test-helpers.js";
 
 let v: { path: string; vaultPath: string; cleanup: () => void };
 let n: Napkin;
@@ -333,8 +333,8 @@ describe("canvas", () => {
 // ── Static methods ────────────────────────────────────────────────
 
 describe("static", () => {
-  test("initTemplates returns template list", () => {
-    const templates = Napkin.initTemplates();
+  test("templates returns template list", () => {
+    const templates = Napkin.vaultTemplates();
     expect(templates.length).toBeGreaterThan(0);
     expect(templates[0].name).toBeTruthy();
   });
@@ -344,13 +344,54 @@ describe("static", () => {
     expect(Napkin.formatSize(1500)).toBe("1.5 KB");
   });
 
-  test("init creates a vault", () => {
+  test("scaffold creates a vault", () => {
     const os = require("node:os");
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-sdk-"));
     try {
-      const result = Napkin.init({ path: tmpDir });
-      expect(result.status).toBe("created");
+      const result = Napkin.scaffold(tmpDir);
+      expect(result.created).toBe(true);
       expect(fs.existsSync(path.join(tmpDir, ".napkin"))).toBe(true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("scaffold with template creates dirs and files", () => {
+    const os = require("node:os");
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-sdk-"));
+    try {
+      const result = Napkin.scaffold(tmpDir, { template: "coding" });
+      expect(result.created).toBe(true);
+      expect(result.template).toBe("coding");
+      expect(result.files.length).toBeGreaterThan(0);
+      expect(fs.existsSync(path.join(tmpDir, ".napkin", "decisions"))).toBe(
+        true,
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("scaffold is idempotent", () => {
+    const os = require("node:os");
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-sdk-"));
+    try {
+      const first = Napkin.scaffold(tmpDir);
+      const second = Napkin.scaffold(tmpDir);
+      expect(first.created).toBe(true);
+      expect(second.created).toBe(false);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("constructor auto-creates vault", () => {
+    const os = require("node:os");
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-sdk-"));
+    try {
+      const n = new Napkin(tmpDir);
+      expect(fs.existsSync(path.join(tmpDir, ".napkin"))).toBe(true);
+      expect(n.vault.contentPath).toContain(".napkin");
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

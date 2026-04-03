@@ -20,6 +20,8 @@ export function findVault(startDir?: string): VaultInfo {
   let dir = path.resolve(startDir || process.cwd());
   const root = path.parse(dir).root;
 
+  const startingDir = dir;
+
   while (true) {
     const napkinDir = path.join(dir, ".napkin");
 
@@ -38,12 +40,49 @@ export function findVault(startDir?: string): VaultInfo {
 
     const parent = path.dirname(dir);
     if (parent === dir || dir === root) {
-      throw new Error(
-        "No vault found. Run 'napkin init' to create one, or run this command inside a directory containing .napkin/.",
-      );
+      // No vault found — create a bare one at the starting directory
+      return createBareVault(startingDir);
     }
     dir = parent;
   }
+}
+
+/**
+ * Create a bare vault at the given directory: .napkin/ + config.json + NAPKIN.md.
+ */
+function createBareVault(projectDir: string): VaultInfo {
+  const napkinDir = path.join(projectDir, ".napkin");
+  fs.mkdirSync(napkinDir, { recursive: true });
+
+  const configFile = path.join(napkinDir, "config.json");
+  if (!fs.existsSync(configFile)) {
+    // Inline minimal default config to avoid circular dependency with utils/config
+    fs.writeFileSync(
+      configFile,
+      JSON.stringify(
+        {
+          overview: { depth: 3, keywords: 8 },
+          search: { limit: 30, snippetLines: 0 },
+          daily: { folder: "daily", format: "YYYY-MM-DD" },
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  const napkinMd = path.join(napkinDir, "NAPKIN.md");
+  if (!fs.existsSync(napkinMd)) {
+    fs.writeFileSync(napkinMd, "");
+  }
+
+  const obsidianPath = path.join(napkinDir, ".obsidian");
+  return {
+    name: path.basename(projectDir),
+    contentPath: napkinDir,
+    configPath: napkinDir,
+    obsidianPath,
+  };
 }
 
 /**

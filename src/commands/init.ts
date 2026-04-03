@@ -15,10 +15,9 @@ export interface InitOptions extends OutputOptions {
 }
 
 export async function init(opts: InitOptions) {
-  let result: ReturnType<typeof Napkin.init>;
+  let result: ReturnType<typeof Napkin.scaffold>;
   try {
-    result = Napkin.init({
-      path: opts.path || process.cwd(),
+    result = Napkin.scaffold(opts.path || process.cwd(), {
       template: opts.template,
     });
   } catch (e: unknown) {
@@ -26,7 +25,7 @@ export async function init(opts: InitOptions) {
     process.exit(EXIT_ERROR);
   }
 
-  if (result.status === "exists") {
+  if (!result.created && !result.template) {
     output(opts, {
       json: () => result,
       human: () => {
@@ -41,36 +40,29 @@ export async function init(opts: InitOptions) {
   output(opts, {
     json: () => result,
     human: () => {
-      console.log(`${dim("Initialized vault at")} ${bold(result.path)}`);
-      if (result.napkin) console.log(`  ${dim("created")} .napkin/`);
-      if (result.configCreated) console.log(`  ${dim("created")} config.json`);
-      if (result.siblingLayout)
-        console.log(
-          `  ${dim("layout")}  sibling (existing .obsidian/ detected)`,
-        );
+      if (result.created) {
+        console.log(`${dim("Initialized vault at")} ${bold(result.path)}`);
+      }
       if (result.template) {
         console.log(`  ${dim("template")} ${bold(result.template)}`);
-        for (const f of result.files || []) {
+        for (const f of result.files) {
           console.log(`  ${dim("created")} ${f}`);
         }
       }
       console.log("");
-      const napkinMdPath = result.siblingLayout
-        ? "NAPKIN.md"
-        : ".napkin/NAPKIN.md";
-      success(`Edit ${napkinMdPath} to set your context.`);
+      success("Edit .napkin/NAPKIN.md to set your context.");
     },
   });
 }
 
 export async function initTemplates(opts: OutputOptions) {
-  const templates = Napkin.initTemplates();
+  const templates = Napkin.vaultTemplates();
 
   output(opts, {
     json: () => ({ templates }),
     human: () => {
       for (const t of templates) {
-        console.log(`${bold(t.name)} — ${t.description}`);
+        console.log(`${bold(t.name)} - ${t.description}`);
         console.log(`  ${dim("folders:")} ${t.dirs.join(", ")}`);
       }
     },

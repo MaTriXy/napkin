@@ -28,8 +28,20 @@ describe("findVault", () => {
     expect(result.configPath).toBe(path.join(vault.path, ".napkin"));
   });
 
-  test("throws when no vault found", () => {
-    expect(() => findVault("/tmp")).toThrow("No vault found");
+  test("auto-creates vault when none found", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "napkin-auto-"));
+    try {
+      const result = findVault(tmpDir);
+      expect(result.contentPath).toBe(path.join(tmpDir, ".napkin"));
+      expect(fs.existsSync(path.join(tmpDir, ".napkin", "config.json"))).toBe(
+        true,
+      );
+      expect(fs.existsSync(path.join(tmpDir, ".napkin", "NAPKIN.md"))).toBe(
+        true,
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   test("finds vault with .napkin/ directory", () => {

@@ -57,6 +57,8 @@ import {
   getInitTemplates,
   type InitResult,
   initVault,
+  type ScaffoldResult,
+  scaffoldVault,
   type TemplateInfo,
 } from "./core/init.js";
 import {
@@ -443,12 +445,17 @@ export class Napkin {
 
   // ── Init (static) ──────────────────────────────────────────────
 
-  static init(opts: { path: string; template?: string }): InitResult {
-    return initVault(opts);
+  static scaffold(path: string, opts?: { template?: string }): ScaffoldResult {
+    return scaffoldVault(path, opts?.template);
   }
 
-  static initTemplates(): TemplateInfo[] {
+  static vaultTemplates(): TemplateInfo[] {
     return getInitTemplates();
+  }
+
+  /** @deprecated Use Napkin.scaffold() instead */
+  static init(opts: { path: string; template?: string }): InitResult {
+    return initVault(opts);
   }
 
   static formatSize(bytes: number): string {
