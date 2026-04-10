@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { Text, Markdown } from "@mariozechner/pi-tui";
 
 function findVaultPath(cwd: string): string | null {
   let dir = cwd;
@@ -32,6 +33,36 @@ function getOverview(vaultPath: string): string | null {
 
 export default function (pi: ExtensionAPI) {
   let hasVault = false;
+
+  pi.registerMessageRenderer("napkin-context", (message, { expanded }, theme) => {
+    if (!expanded) {
+      const label = theme.fg("customMessageLabel", "🧻 napkin vault context");
+      const hint = theme.fg("dim", " — Ctrl+O to expand");
+      return new Text(label + hint, 1, 0);
+    }
+    return new Markdown(
+      message.content,
+      1,
+      0,
+      {
+        heading: (t) => theme.fg("mdHeading", t),
+        link: (t) => theme.fg("mdLink", t),
+        linkUrl: (t) => theme.fg("mdLinkUrl", t),
+        code: (t) => theme.fg("mdCode", t),
+        codeBlock: (t) => theme.fg("mdCodeBlock", t),
+        codeBlockBorder: (t) => theme.fg("mdCodeBlockBorder", t),
+        quote: (t) => theme.fg("mdQuote", t),
+        quoteBorder: (t) => theme.fg("mdQuoteBorder", t),
+        hr: (t) => theme.fg("mdHr", t),
+        listBullet: (t) => theme.fg("mdListBullet", t),
+        bold: (t) => theme.bold(t),
+        italic: (t) => theme.italic(t),
+        strikethrough: (t) => theme.strikethrough(t),
+        underline: (t) => theme.underline(t),
+      },
+      { color: (t) => theme.fg("customMessageText", t) },
+    );
+  });
 
   pi.on("session_start", async (_event, ctx) => {
     const vaultPath = findVaultPath(ctx.cwd);
