@@ -1,11 +1,23 @@
 {
-  "name": "napkin-context",
+  "name": "@miclivs/pi-napkin-context",
   "version": "0.1.0",
-  "description": "Inject napkin vault overview into agent system prompt",
-  "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*"
-  },
+  "description": "Pi extension — injects napkin vault overview into agent context, collapsible in TUI",
+  "type": "commonjs",
+  "keywords": [
+    "pi-package"
+  ],
+  "files": [
+    "index.ts"
+  ],
   "pi": {
-    "extensions": ["./index.ts"]
-  }
+    "extensions": [
+      "."
+    ]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*"
+  },
+  "author": "michaelliv",
+  "license": "MIT"
 }
