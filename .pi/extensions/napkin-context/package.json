@@ -7,7 +7,8 @@
     "pi-package"
   ],
   "files": [
-    "index.ts"
+    "index.ts",
+    "README.md"
   ],
   "pi": {
     "extensions": [
