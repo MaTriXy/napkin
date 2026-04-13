@@ -15,3 +15,7 @@ export const TEMPLATES: Record<string, VaultTemplate> = {
   company,
   product,
 };
+
+export function registerTemplate(template: VaultTemplate): void {
+  TEMPLATES[template.name] = template;
+}

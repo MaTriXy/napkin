@@ -95,6 +95,8 @@ import {
 } from "./core/templates.js";
 import { getVaultMetadata, type VaultMetadata } from "./core/vault.js";
 import { getWordCount, type WordCount } from "./core/wordcount.js";
+import { registerTemplate } from "./templates/index.js";
+import type { VaultTemplate } from "./templates/types.js";
 import type { Heading } from "./utils/markdown.js";
 import { findVault, type VaultInfo } from "./utils/vault.js";
 
@@ -338,7 +340,10 @@ export class Napkin {
   // ── Config ──────────────────────────────────────────────────────
 
   config(): Record<string, unknown> {
-    return loadConfig(this.vault.configPath) as unknown as Record<string, unknown>;
+    return loadConfig(this.vault.configPath) as unknown as Record<
+      string,
+      unknown
+    >;
   }
 
   configGet(key: string): unknown {
@@ -445,5 +450,9 @@ export class Napkin {
 
   static vaultTemplates(): TemplateInfo[] {
     return getInitTemplates();
+  }
+
+  static registerTemplate(template: VaultTemplate): void {
+    registerTemplate(template);
   }
 }

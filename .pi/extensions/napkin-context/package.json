@@ -1,6 +1,6 @@
 {
   "name": "@miclivs/pi-napkin-context",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pi extension — injects napkin vault overview into agent context, collapsible in TUI",
   "type": "commonjs",
   "keywords": [
