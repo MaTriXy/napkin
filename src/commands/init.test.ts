@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { addTemplate } from "../core/init.js";
 import { init } from "./init.js";
 
 let tmpDir: string;
@@ -131,9 +132,7 @@ describe("init command", () => {
     expect(data.template).toBe("company");
     expect(fs.existsSync(path.join(tmpDir, "runbooks"))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, "NAPKIN.md"))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, "Templates/Runbook.md"))).toBe(
-      true,
-    );
+    expect(fs.existsSync(path.join(tmpDir, "Templates/Runbook.md"))).toBe(true);
   });
 
   test("scaffolds all 5 templates", async () => {
@@ -224,14 +223,56 @@ describe("init command", () => {
     expect(exitCode).toBe(1);
   });
 
+  test("addTemplate on existing vault adds dirs and files", async () => {
+    await init({ quiet: true, path: tmpDir });
+
+    const result = addTemplate(tmpDir, "coding");
+    expect(result.template).toBe("coding");
+    expect(result.files).toContain("decisions/");
+    expect(result.files).toContain("NAPKIN.md");
+    expect(fs.existsSync(path.join(tmpDir, "decisions"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "Templates/Decision.md"))).toBe(
+      true,
+    );
+  });
+
+  test("addTemplate composes multiple templates", async () => {
+    await init({ quiet: true, path: tmpDir, template: "coding" });
+
+    const result = addTemplate(tmpDir, "company");
+    expect(result.template).toBe("company");
+    expect(result.files).toContain("runbooks/");
+    expect(result.files).not.toContain("NAPKIN.md"); // already exists, skipped
+    expect(fs.existsSync(path.join(tmpDir, "runbooks"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "Templates/Runbook.md"))).toBe(true);
+    // Original coding template files still there
+    expect(fs.existsSync(path.join(tmpDir, "decisions"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "Templates/Decision.md"))).toBe(
+      true,
+    );
+  });
+
+  test("addTemplate throws on uninitialized vault", () => {
+    expect(() => addTemplate(tmpDir, "coding")).toThrow(
+      "Vault not initialized",
+    );
+  });
+
+  test("addTemplate throws on unknown template", async () => {
+    await init({ quiet: true, path: tmpDir });
+    expect(() => addTemplate(tmpDir, "doesnotexist")).toThrow(
+      "Unknown template",
+    );
+  });
+
   test("sibling layout is default", async () => {
     await init({ quiet: true, path: tmpDir, template: "coding" });
 
     // .napkin/ holds config only
     expect(fs.existsSync(path.join(tmpDir, ".napkin"))).toBe(true);
-    expect(
-      fs.existsSync(path.join(tmpDir, ".napkin", "config.json")),
-    ).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, ".napkin", "config.json"))).toBe(
+      true,
+    );
 
     // .obsidian/ is sibling
     expect(fs.existsSync(path.join(tmpDir, ".obsidian"))).toBe(true);

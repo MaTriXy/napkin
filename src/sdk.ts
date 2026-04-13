@@ -54,6 +54,8 @@ import {
   getFolderList,
 } from "./core/files.js";
 import {
+  type AddTemplateResult,
+  addTemplate,
   getInitTemplates,
   type ScaffoldResult,
   scaffoldVault,
@@ -454,5 +456,9 @@ export class Napkin {
 
   static registerTemplate(template: VaultTemplate): void {
     registerTemplate(template);
+  }
+
+  static addTemplate(path: string, template: string): AddTemplateResult {
+    return addTemplate(path, template);
   }
 }

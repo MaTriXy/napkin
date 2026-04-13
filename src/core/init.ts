@@ -170,6 +170,32 @@ export function scaffoldVault(
   };
 }
 
+export interface AddTemplateResult {
+  template: string;
+  files: string[];
+}
+
+export function addTemplate(
+  targetPath: string,
+  template: string,
+): AddTemplateResult {
+  const resolved = path.resolve(targetPath);
+  const napkinDir = path.join(resolved, ".napkin");
+
+  if (!fs.existsSync(path.join(napkinDir, "config.json"))) {
+    throw new Error("Vault not initialized. Run scaffold first.");
+  }
+
+  if (!TEMPLATES[template]) {
+    throw new Error(
+      `Unknown template: ${template}. Available: ${Object.keys(TEMPLATES).join(", ")}`,
+    );
+  }
+
+  const files = scaffoldTemplate(resolved, TEMPLATES[template]);
+  return { template, files };
+}
+
 export function getInitTemplates(): TemplateInfo[] {
   return Object.values(TEMPLATES).map((t) => ({
     name: t.name,
