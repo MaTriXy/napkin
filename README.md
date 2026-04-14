@@ -318,19 +318,12 @@ Core modules never call `console.log`, `process.exit`, or import output utilitie
 
 ---
 
-## Pi Extensions
+## Pi Integration
 
-napkin ships as a [pi](https://github.com/mariozechner/pi-coding-agent) package with two extensions:
-
-### napkin-context
-Injects the vault overview (Level 0 + Level 1) into the agent's system prompt on session start.
-
-### napkin-distill
-Forks the current session and spawns a sub-agent to distill knowledge into the vault. Runs in the background.
+For [pi](https://github.com/badlogic/pi) users, install [pi-napkin](https://github.com/Michaelliv/pi-napkin) — vault context injection, `kb_search`/`kb_read` tools, and automatic distillation.
 
 ```bash
-pi install npm:napkin-ai
-napkin config set --key distill.enabled --value true
+pi install git:github.com/Michaelliv/pi-napkin
 ```
 
 ---
