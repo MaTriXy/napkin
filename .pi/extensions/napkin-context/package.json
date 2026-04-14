@@ -15,6 +15,9 @@
       "."
     ]
   },
+  "dependencies": {
+    "napkin-ai": "*"
+  },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": "*",
     "@mariozechner/pi-tui": "*",

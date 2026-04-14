@@ -2,7 +2,7 @@ import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Markdown, Text } from "@mariozechner/pi-tui";
-import { Napkin } from "../../src/sdk.js";
+import { Napkin } from "napkin-ai";
 import { findVaultPath } from "../vault-resolve.js";
 
 function getNapkin(cwd: string): Napkin {
