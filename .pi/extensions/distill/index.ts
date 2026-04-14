@@ -4,6 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { SessionManager } from "@mariozechner/pi-coding-agent";
+import { findVaultPath } from "../vault-resolve.js";
 
 interface DistillConfig {
   enabled: boolean;
@@ -27,27 +28,6 @@ function loadDistillConfig(vaultPath: string): DistillConfig {
   } catch {
     return DEFAULT_CONFIG;
   }
-}
-
-function findVaultPath(cwd: string): string | null {
-  // Walk up from cwd looking for a local project vault
-  let dir = cwd;
-  while (dir !== path.dirname(dir)) {
-    const napkinDir = path.join(dir, ".napkin");
-    if (fs.existsSync(napkinDir)) {
-      return napkinDir;
-    }
-    dir = path.dirname(dir);
-  }
-
-  // Fall back to global pi vault
-  const homeDir = os.homedir();
-  const globalVault = path.join(homeDir, ".pi", "agent", "kb", ".napkin");
-  if (fs.existsSync(globalVault)) {
-    return globalVault;
-  }
-
-  return null;
 }
 
 const DISTILL_PROMPT = `Distill this conversation into the napkin vault.

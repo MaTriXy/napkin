@@ -3,18 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Markdown, Text } from "@mariozechner/pi-tui";
-
-function findVaultPath(cwd: string): string | null {
-  let dir = cwd;
-  while (dir !== path.dirname(dir)) {
-    const napkinDir = path.join(dir, ".napkin");
-    if (fs.existsSync(napkinDir)) {
-      return napkinDir;
-    }
-    dir = path.dirname(dir);
-  }
-  return null;
-}
+import { findVaultPath } from "../vault-resolve.js";
 
 function getOverview(vaultPath: string): string | null {
   try {
