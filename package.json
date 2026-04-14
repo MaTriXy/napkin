@@ -11,9 +11,7 @@
     "napkin": "./dist/main.js"
   },
   "files": [
-    "dist",
-    ".pi/extensions",
-    "skills"
+    "dist"
   ],
   "scripts": {
     "build": "tsc",
@@ -45,18 +43,8 @@
     "tasks",
     "tags",
     "search",
-    "local-first",
-    "pi-package"
+    "local-first"
   ],
-  "pi": {
-    "extensions": [
-      ".pi/extensions/napkin-context",
-      ".pi/extensions/distill"
-    ],
-    "skills": [
-      "skills"
-    ]
-  },
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
