@@ -4,7 +4,7 @@ import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { Markdown, Text } from "@mariozechner/pi-tui";
-
+import { Napkin } from "../../src/sdk.js";
 import { findVaultPath } from "../vault-resolve.js";
 
 function getOverview(vaultPath: string): string | null {
@@ -102,10 +102,10 @@ export default function (pi: ExtensionAPI) {
 
   // ── Tools ───────────────────────────────────────────────────────
 
-  function getVaultRoot(cwd: string): string {
+  function getNapkin(cwd: string): Napkin {
     const vaultPath = findVaultPath(cwd);
     if (!vaultPath) throw new Error("No napkin vault found");
-    return path.dirname(vaultPath);
+    return new Napkin(path.dirname(vaultPath));
   }
 
   pi.registerTool({
@@ -116,17 +116,30 @@ export default function (pi: ExtensionAPI) {
     parameters: Type.Object({
       query: Type.String({ description: "Search query" }),
     }),
-    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const vault = getVaultRoot(ctx.cwd);
-      const result = await pi.exec("napkin", ["search", params.query, "--vault", vault, "--json"], { signal, timeout: 10000 });
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const n = getNapkin(ctx.cwd);
+      const results = n.search(params.query);
 
-      if (result.code !== 0) {
-        throw new Error(result.stderr || "Search failed");
+      if (results.length === 0) {
+        return {
+          content: [{ type: "text", text: "No results found." }],
+          details: { results: [] },
+        };
       }
 
+      const text = results
+        .map((r) => {
+          let entry = `**${r.file}**`;
+          if (r.snippets && r.snippets.length > 0) {
+            entry += "\n" + r.snippets.map((s) => `  ${s}`).join("\n");
+          }
+          return entry;
+        })
+        .join("\n\n");
+
       return {
-        content: [{ type: "text", text: result.stdout || "No results found." }],
-        details: {},
+        content: [{ type: "text", text }],
+        details: { results },
       };
     },
   });
@@ -139,17 +152,13 @@ export default function (pi: ExtensionAPI) {
     parameters: Type.Object({
       file: Type.String({ description: "File name or path to read" }),
     }),
-    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const vault = getVaultRoot(ctx.cwd);
-      const result = await pi.exec("napkin", ["read", params.file, "--vault", vault, "-q"], { signal, timeout: 10000 });
-
-      if (result.code !== 0) {
-        throw new Error(result.stderr || "File not found");
-      }
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const n = getNapkin(ctx.cwd);
+      const result = n.read(params.file);
 
       return {
-        content: [{ type: "text", text: result.stdout }],
-        details: {},
+        content: [{ type: "text", text: result.content }],
+        details: { path: result.path },
       };
     },
   });
