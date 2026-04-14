@@ -1,5 +1,3 @@
-import { execSync } from "node:child_process";
-import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
@@ -7,18 +5,31 @@ import { Markdown, Text } from "@mariozechner/pi-tui";
 import { Napkin } from "../../src/sdk.js";
 import { findVaultPath } from "../vault-resolve.js";
 
-function getOverview(vaultPath: string): string | null {
+function getNapkin(cwd: string): Napkin {
+  const vaultPath = findVaultPath(cwd);
+  if (!vaultPath) throw new Error("No napkin vault found");
+  return new Napkin(path.dirname(vaultPath));
+}
+
+function getOverview(n: Napkin): string | null {
   try {
-    const output = execSync(`napkin overview --vault "${vaultPath}"`, {
-      encoding: "utf-8",
-      timeout: 10000,
-    }).trim();
-    return output || null;
+    const overview = n.overview();
+    if (!overview) return null;
+
+    let text = overview.context || "";
+    if (overview.overview && overview.overview.length > 0) {
+      text += "\n\n";
+      for (const folder of overview.overview) {
+        text += `${folder.path}/\n`;
+        if (folder.keywords && folder.keywords.length > 0) {
+          text += `  keywords: ${folder.keywords.join(", ")}\n`;
+        }
+        text += `  notes: ${folder.notes}\n`;
+      }
+    }
+    return text.trim() || null;
   } catch {
-    // Fallback to reading NAPKIN.md directly
-    const napkinPath = path.join(vaultPath, "NAPKIN.md");
-    if (!fs.existsSync(napkinPath)) return null;
-    return fs.readFileSync(napkinPath, "utf-8").trim();
+    return null;
   }
 }
 
@@ -62,7 +73,14 @@ export default function (pi: ExtensionAPI) {
     const vaultPath = findVaultPath(ctx.cwd);
     if (!vaultPath) return;
 
-    const overview = getOverview(vaultPath);
+    let n: Napkin;
+    try {
+      n = getNapkin(ctx.cwd);
+    } catch {
+      return;
+    }
+
+    const overview = getOverview(n);
     hasVault = !!overview;
 
     if (overview) {
@@ -101,12 +119,6 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ── Tools ───────────────────────────────────────────────────────
-
-  function getNapkin(cwd: string): Napkin {
-    const vaultPath = findVaultPath(cwd);
-    if (!vaultPath) throw new Error("No napkin vault found");
-    return new Napkin(path.dirname(vaultPath));
-  }
 
   pi.registerTool({
     name: "kb_search",
