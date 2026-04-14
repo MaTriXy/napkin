@@ -2,7 +2,9 @@ import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { Type } from "@sinclair/typebox";
 import { Markdown, Text } from "@mariozechner/pi-tui";
+
 import { findVaultPath } from "../vault-resolve.js";
 
 function getOverview(vaultPath: string): string | null {
@@ -80,8 +82,8 @@ export default function (pi: ExtensionAPI) {
           "napkin-context",
           "## Napkin vault context\n" +
             "You have access to a napkin vault (Obsidian-compatible knowledge base). " +
-            "Here is the vault overview. Use `napkin search <query>` to find specific content, " +
-            "`napkin read <file>` to open files.\n\n" +
+            "Here is the vault overview. Use the kb_search tool to find specific content, " +
+            "and the kb_read tool to read files.\n\n" +
             overview,
           true,
         );
@@ -96,5 +98,59 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setStatus("napkin", theme.fg("dim", "napkin: no NAPKIN.md"));
       }
     }
+  });
+
+  // ── Tools ───────────────────────────────────────────────────────
+
+  function getVaultRoot(cwd: string): string {
+    const vaultPath = findVaultPath(cwd);
+    if (!vaultPath) throw new Error("No napkin vault found");
+    return path.dirname(vaultPath);
+  }
+
+  pi.registerTool({
+    name: "kb_search",
+    label: "KB Search",
+    description: "Search the knowledge base for notes matching a query",
+    promptSnippet: "Search the napkin vault for notes by keyword or topic",
+    parameters: Type.Object({
+      query: Type.String({ description: "Search query" }),
+    }),
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      const vault = getVaultRoot(ctx.cwd);
+      const result = await pi.exec("napkin", ["search", params.query, "--vault", vault, "--json"], { signal, timeout: 10000 });
+
+      if (result.code !== 0) {
+        throw new Error(result.stderr || "Search failed");
+      }
+
+      return {
+        content: [{ type: "text", text: result.stdout || "No results found." }],
+        details: {},
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "kb_read",
+    label: "KB Read",
+    description: "Read a file from the knowledge base",
+    promptSnippet: "Read a note from the napkin vault by name or path",
+    parameters: Type.Object({
+      file: Type.String({ description: "File name or path to read" }),
+    }),
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      const vault = getVaultRoot(ctx.cwd);
+      const result = await pi.exec("napkin", ["read", params.file, "--vault", vault, "-q"], { signal, timeout: 10000 });
+
+      if (result.code !== 0) {
+        throw new Error(result.stderr || "File not found");
+      }
+
+      return {
+        content: [{ type: "text", text: result.stdout }],
+        details: {},
+      };
+    },
   });
 }
