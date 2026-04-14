@@ -30,6 +30,7 @@ function loadDistillConfig(vaultPath: string): DistillConfig {
 }
 
 function findVaultPath(cwd: string): string | null {
+  // Walk up from cwd looking for a local project vault
   let dir = cwd;
   while (dir !== path.dirname(dir)) {
     const napkinDir = path.join(dir, ".napkin");
@@ -38,6 +39,14 @@ function findVaultPath(cwd: string): string | null {
     }
     dir = path.dirname(dir);
   }
+
+  // Fall back to global pi vault
+  const homeDir = os.homedir();
+  const globalVault = path.join(homeDir, ".pi", "agent", "kb", ".napkin");
+  if (fs.existsSync(globalVault)) {
+    return globalVault;
+  }
+
   return null;
 }
 
