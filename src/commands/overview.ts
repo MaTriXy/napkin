@@ -1,5 +1,11 @@
 import { Napkin } from "../sdk.js";
-import { bold, dim, warn, type OutputOptions, output } from "../utils/output.js";
+import {
+  bold,
+  dim,
+  type OutputOptions,
+  output,
+  warn,
+} from "../utils/output.js";
 
 export async function overview(
   opts: OutputOptions & {

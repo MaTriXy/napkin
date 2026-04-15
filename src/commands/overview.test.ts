@@ -66,7 +66,8 @@ describe("overview", () => {
   test("skips files with malformed YAML frontmatter", async () => {
     const vault = createTempVault({
       "notes/good.md": "---\ntags: [valid]\n---\n# Good note\nHello",
-      "notes/bad.md": "---\ntags: [#foo, #bar]\n---\n# Bad YAML\nBroken frontmatter",
+      "notes/bad.md":
+        "---\ntags: [#foo, #bar]\n---\n# Bad YAML\nBroken frontmatter",
       "notes/also-good.md": "# No frontmatter\nJust content",
     });
 

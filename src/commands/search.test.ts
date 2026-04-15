@@ -229,7 +229,8 @@ describe("search", () => {
     const vault = createTempVault({
       "NAPKIN.md": "# Vault context\nThis is the vault root context",
       "projects/napkin.md": "# Napkin project\nThe napkin tool itself",
-      "notes/reference.md": "# Reference\nSee [[napkin]] for details on decisions",
+      "notes/reference.md":
+        "# Reference\nSee [[napkin]] for details on decisions",
     });
 
     const data = await captureJson(() =>
@@ -246,7 +247,7 @@ describe("search", () => {
     const allResults = withLinks.results as { file: string; links: number }[];
     const napkinRoot = allResults.find((r) => r.file === "NAPKIN.md");
     expect(napkinRoot).toBeDefined();
-    expect(napkinRoot!.links).toBeGreaterThanOrEqual(1);
+    expect(napkinRoot?.links).toBeGreaterThanOrEqual(1);
 
     vault.cleanup();
   });

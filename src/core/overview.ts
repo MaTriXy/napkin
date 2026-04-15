@@ -335,7 +335,11 @@ export function getOverview(
   const maxDepth = opts?.depth ?? config.overview.depth;
   const maxKeywords = opts?.keywords ?? config.overview.keywords;
 
-  const { folders, warnings } = buildOverviewFolders(contentPath, maxDepth, maxKeywords);
+  const { folders, warnings } = buildOverviewFolders(
+    contentPath,
+    maxDepth,
+    maxKeywords,
+  );
 
   const contextPath = path.join(contentPath, "NAPKIN.md");
   const context = fs.existsSync(contextPath)

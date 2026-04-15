@@ -137,7 +137,10 @@ export function resolveFile(vaultPath: string, fileRef: string): string | null {
  * Like resolveFile but never throws on ambiguous matches.
  * Returns the shallowest match (fewest path segments), matching Obsidian's behavior.
  */
-export function resolveFileLoose(vaultPath: string, fileRef: string): string | null {
+export function resolveFileLoose(
+  vaultPath: string,
+  fileRef: string,
+): string | null {
   const matches = findMatches(vaultPath, fileRef);
   if (matches.length > 1) {
     matches.sort((a, b) => a.split("/").length - b.split("/").length);
