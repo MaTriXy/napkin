@@ -25,12 +25,6 @@ export interface NapkinConfig {
   templates: {
     folder: string;
   };
-  distill: {
-    enabled: boolean;
-    intervalMinutes: number;
-    model: { provider: string; id: string };
-    templates: string[];
-  };
   graph: {
     renderer: "auto" | "glimpse" | "browser";
   };
@@ -51,12 +45,6 @@ export const DEFAULT_CONFIG: NapkinConfig = {
   },
   templates: {
     folder: "Templates",
-  },
-  distill: {
-    enabled: false,
-    intervalMinutes: 60,
-    model: { provider: "anthropic", id: "claude-sonnet-4-6" },
-    templates: [],
   },
   graph: {
     renderer: "auto",
