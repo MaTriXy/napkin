@@ -4,6 +4,7 @@ import { loadConfig } from "../utils/config.js";
 import { listFiles } from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
 import { extractHeadings, extractTags } from "../utils/markdown.js";
+import { warn } from "../utils/output.js";
 
 export interface OverviewFolder {
   path: string;
@@ -256,7 +257,13 @@ function buildOverviewFolders(
 
     for (const file of folderFileList) {
       const content = fs.readFileSync(path.join(vaultPath, file), "utf-8");
-      const { properties } = parseFrontmatter(content);
+      let properties: Record<string, unknown> = {};
+      try {
+        ({ properties } = parseFrontmatter(content));
+      } catch {
+        warn(`Skipping ${file} (malformed YAML frontmatter)`);
+        continue;
+      }
 
       const inlineTags = extractTags(content);
       for (const t of inlineTags) allTags.add(t);
