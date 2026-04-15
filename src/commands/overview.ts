@@ -1,5 +1,5 @@
 import { Napkin } from "../sdk.js";
-import { bold, dim, type OutputOptions, output } from "../utils/output.js";
+import { bold, dim, warn, type OutputOptions, output } from "../utils/output.js";
 
 export async function overview(
   opts: OutputOptions & {
@@ -13,6 +13,10 @@ export async function overview(
     depth: opts.depth ? Number.parseInt(opts.depth, 10) : undefined,
     keywords: opts.keywords ? Number.parseInt(opts.keywords, 10) : undefined,
   });
+
+  for (const w of result.warnings ?? []) {
+    warn(w);
+  }
 
   output(opts, {
     json: () => result,

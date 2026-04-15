@@ -4,7 +4,6 @@ import { loadConfig } from "../utils/config.js";
 import { listFiles } from "../utils/files.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
 import { extractHeadings, extractTags } from "../utils/markdown.js";
-import { warn } from "../utils/output.js";
 
 export interface OverviewFolder {
   path: string;
@@ -16,6 +15,7 @@ export interface OverviewFolder {
 export interface VaultOverview {
   context?: string;
   overview: OverviewFolder[];
+  warnings?: string[];
 }
 
 const STOP_WORDS = new Set([
@@ -232,8 +232,9 @@ function buildOverviewFolders(
   vaultPath: string,
   maxDepth: number,
   maxKeywords: number,
-): OverviewFolder[] {
+): { folders: OverviewFolder[]; warnings: string[] } {
   const files = listFiles(vaultPath, { ext: "md" });
+  const warnings: string[] = [];
 
   const folderFiles = new Map<string, string[]>();
   for (const file of files) {
@@ -261,7 +262,7 @@ function buildOverviewFolders(
       try {
         ({ properties } = parseFrontmatter(content));
       } catch {
-        warn(`Skipping ${file} (malformed YAML frontmatter)`);
+        warnings.push(`Skipping ${file} (malformed YAML frontmatter)`);
         continue;
       }
 
@@ -322,7 +323,7 @@ function buildOverviewFolders(
     });
   }
 
-  return results;
+  return { folders: results, warnings };
 }
 
 export function getOverview(
@@ -334,7 +335,7 @@ export function getOverview(
   const maxDepth = opts?.depth ?? config.overview.depth;
   const maxKeywords = opts?.keywords ?? config.overview.keywords;
 
-  const folders = buildOverviewFolders(contentPath, maxDepth, maxKeywords);
+  const { folders, warnings } = buildOverviewFolders(contentPath, maxDepth, maxKeywords);
 
   const contextPath = path.join(contentPath, "NAPKIN.md");
   const context = fs.existsSync(contextPath)
@@ -344,5 +345,6 @@ export function getOverview(
   return {
     ...(context ? { context } : {}),
     overview: folders,
+    ...(warnings.length > 0 ? { warnings } : {}),
   };
 }

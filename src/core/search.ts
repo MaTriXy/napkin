@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import MiniSearch from "minisearch";
 import { loadConfig } from "../utils/config.js";
-import { listFiles, resolveFile } from "../utils/files.js";
+import { listFiles, resolveFileLoose } from "../utils/files.js";
 import { extractLinks } from "../utils/markdown.js";
 import {
   computeFingerprint,
@@ -66,7 +66,7 @@ function buildBacklinkCounts(vaultPath: string): Map<string, number> {
     const content = fs.readFileSync(path.join(vaultPath, file), "utf-8");
     const links = extractLinks(content);
     for (const target of links.wikilinks) {
-      const resolved = resolveFile(vaultPath, target);
+      const resolved = resolveFileLoose(vaultPath, target);
       if (resolved) {
         counts.set(resolved, (counts.get(resolved) || 0) + 1);
       }

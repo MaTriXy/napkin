@@ -101,31 +101,46 @@ export function listFolders(
 }
 
 /**
- * Resolve a file reference (wikilink-style name or exact path) to a relative path in the vault.
- * - If fileRef contains '/' or ends with '.md', treat as exact path
- * - Otherwise, search all .md files for a matching basename
+ * Find all .md files matching a wikilink-style name or exact path.
  */
-export function resolveFile(vaultPath: string, fileRef: string): string | null {
+function findMatches(vaultPath: string, fileRef: string): string[] {
   // Exact path
   if (fileRef.includes("/") || fileRef.endsWith(".md")) {
     const ref = fileRef.endsWith(".md") ? fileRef : `${fileRef}.md`;
     const fullPath = path.join(vaultPath, ref);
-    if (fs.existsSync(fullPath)) return ref;
-    return null;
+    return fs.existsSync(fullPath) ? [ref] : [];
   }
 
   // Wikilink-style: search by basename
   const target = fileRef.toLowerCase();
   const allFiles = listFiles(vaultPath, { ext: "md" });
-  const matches: string[] = [];
-  for (const file of allFiles) {
-    const basename = path.basename(file, ".md").toLowerCase();
-    if (basename === target) matches.push(file);
-  }
+  return allFiles.filter(
+    (file) => path.basename(file, ".md").toLowerCase() === target,
+  );
+}
+
+/**
+ * Resolve a file reference (wikilink-style name or exact path) to a relative path in the vault.
+ * Throws on ambiguous matches so the user can disambiguate.
+ */
+export function resolveFile(vaultPath: string, fileRef: string): string | null {
+  const matches = findMatches(vaultPath, fileRef);
   if (matches.length > 1) {
     throw new Error(
       `Ambiguous file reference "${fileRef}" matches ${matches.length} files: ${matches.join(", ")}. Use the full path to disambiguate.`,
     );
+  }
+  return matches[0] ?? null;
+}
+
+/**
+ * Like resolveFile but never throws on ambiguous matches.
+ * Returns the shallowest match (fewest path segments), matching Obsidian's behavior.
+ */
+export function resolveFileLoose(vaultPath: string, fileRef: string): string | null {
+  const matches = findMatches(vaultPath, fileRef);
+  if (matches.length > 1) {
+    matches.sort((a, b) => a.split("/").length - b.split("/").length);
   }
   return matches[0] ?? null;
 }

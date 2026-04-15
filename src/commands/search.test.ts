@@ -225,6 +225,32 @@ describe("search", () => {
     expect(results.map((r) => r.file)).toContain("Projects/alpha.md");
   });
 
+  test("does not crash on ambiguous file references in backlinks", async () => {
+    const vault = createTempVault({
+      "NAPKIN.md": "# Vault context\nThis is the vault root context",
+      "projects/napkin.md": "# Napkin project\nThe napkin tool itself",
+      "notes/reference.md": "# Reference\nSee [[napkin]] for details on decisions",
+    });
+
+    const data = await captureJson(() =>
+      search({ json: true, vault: vault.path, query: "decisions" }),
+    );
+    const results = data.results as { file: string; links: number }[];
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.map((r) => r.file)).toContain("notes/reference.md");
+
+    // [[napkin]] resolves to shallowest path (NAPKIN.md), which gets the backlink
+    const withLinks = await captureJson(() =>
+      search({ json: true, vault: vault.path, query: "napkin", score: true }),
+    );
+    const allResults = withLinks.results as { file: string; links: number }[];
+    const napkinRoot = allResults.find((r) => r.file === "NAPKIN.md");
+    expect(napkinRoot).toBeDefined();
+    expect(napkinRoot!.links).toBeGreaterThanOrEqual(1);
+
+    vault.cleanup();
+  });
+
   test("cache not used when searching a subfolder", async () => {
     // Cache is folder-specific — searching with --path shouldn't use full-vault cache
     await captureJson(() =>
